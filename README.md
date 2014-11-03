@@ -5,12 +5,12 @@ Python dependencies:
 requests http://docs.python-requests.org/en/latest/
 
 Install it with:
-`sudo pip install requests`
+`sudo pip install testdroid`
 
 Usage
 -----
 
-`./testdroid.py --help`
+`testdroid --help`
 
 Note that you can set `TESTDROID_USERNAME`, `TESTDROID_PASSWORD` and `TESTDROID_URL` environment variables.
 
