@@ -286,6 +286,13 @@ class Testdroid:
         path = "users/%s/projects/%s/files/test" % (me['id'], project_id)
         self.upload(path=path, filename=filename)
 
+    """ Upload additional data file to project
+    """
+    def upload_data_file(self, project_id, filename):
+        me = self.get_me()
+        path = "users/%s/projects/%s/files/data" % (me['id'], project_id)
+        self.upload(path=path, filename=filename)
+
     """ Set project parameters
     """
     def set_project_parameters(self, project_id, parameters):
@@ -418,6 +425,7 @@ Commands:
     projects                                    Get projects
     upload-application <project-id> <filename>  Upload application to project
     upload-test <project-id> <filename>         Upload test file to project
+    upload-data <project-id> <filename>         Upload additional data file to project
     start-test-run <project-id> <device-group-id> Start a test run
     test-runs <project-id>                      Get test runs for a project
     test-run <project-id> <test-run-id>         Get test run details
@@ -448,6 +456,7 @@ Commands:
             "delete-project": self.delete_project,
             "upload-application": self.upload_application_file,
             "upload-test": self.upload_test_file,
+            "upload-data": self.upload_data_file,
             "start-test-run": self.start_test_run,
             "test-run": self.get_test_run,
             "test-runs": self.print_project_test_runs,
