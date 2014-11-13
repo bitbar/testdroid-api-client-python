@@ -119,7 +119,7 @@ class Testdroid:
                 headers = { "Accept": "application/json" }
                 )
             if res.status_code != 200:
-                print "FAILED: Authentication or connection failure. Check Cloud url and your credentials"
+                print "FAILED: Authentication or connection failure. Check Testdroid Cloud URL and your credentials."
                 sys.exit(-1)
 
             reply = res.json()
@@ -222,6 +222,8 @@ class Testdroid:
     def get_me(self):
         return self.get("me")
 
+    """ Returns list of device groups
+    """
     def get_device_groups(self):
         return self.get("me/device-groups")
 
@@ -230,10 +232,11 @@ class Testdroid:
     def get_devices(self, limit=0):
         return self.get("devices?limit=%s" % (limit))
 
+    """ Print device groups
+    """
     def print_device_groups(self):
         for device_group in self.get_device_groups()['data']:
             print "%s %s %s %s devices" % (str(device_group['id']).ljust(12), device_group['displayName'].ljust(30), device_group['osType'].ljust(10), device_group['deviceCount'])
-
 
     """ Create a project
     """
@@ -243,6 +246,8 @@ class Testdroid:
 
         logger.info("Project %s: %s (%s) created" % (project['id'], project['name'], project['type'] ))
 
+    """ Delete a project
+    """
     def delete_project(self, project_id):
         project = self.get_project(project_id)
         if project:
@@ -253,7 +258,7 @@ class Testdroid:
     def get_projects(self):
         return self.get("me/projects")
 
-    """ Returns one single project
+    """ Returns a single project
     """
     def get_project(self, project_id):
         return self.get("me/projects/%s" % project_id)
@@ -300,8 +305,8 @@ class Testdroid:
             sys.exit(1)
 
         if device_group_id is None and device_model_ids is None:
-            print "Device group or Device models must be defined"
-            sys.exit(1) 
+            print "Device group or device models must be defined"
+            sys.exit(1)
 
         if device_group_id is not None:
             device_group = self.get("/users/%s/device-groups/%s" % (me['id'], device_group_id))
@@ -332,11 +337,10 @@ class Testdroid:
         payload={'deviceModelId':device_model_id}
         return self.post("me/device-sessions", payload)
     
-    """ Stop device sessions
+    """ Stop device session
     """
     def stop_device_session(self, device_session_id):
         return self.post("me/device-sessions/%s/release" % (device_session_id))
-
 
     """ Get all test runs for a project
     """
@@ -409,6 +413,7 @@ Commands:
                                                         APPIUM_ANDROID
                                                         APPIUM_IOS
                                                         CALABASH
+                                                        CALABASH_IOS
     delete-project <id>                         Delete a project
     projects                                    Get projects
     upload-application <project-id> <filename>  Upload application to project
