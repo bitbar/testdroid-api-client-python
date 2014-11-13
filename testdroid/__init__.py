@@ -430,7 +430,7 @@ Commands:
     test-runs <project-id>                      Get test runs for a project
     test-run <project-id> <test-run-id>         Get test run details
     device-runs <project-id> <test-run-id>      Get device runs for a test run
-    download-test-run <id>                      Download test run data. Data will be downloaded to
+    download-test-run <project-id> <test-run-id> Download test run data. Data will be downloaded to
                                                 current directory in a structure:
                                                 [test-run-id]/[device-run-id]-[device-name]/files...
 """
