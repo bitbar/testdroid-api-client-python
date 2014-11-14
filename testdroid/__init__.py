@@ -7,7 +7,7 @@ from collections import namedtuple
 from datetime import datetime
 
 FORMAT = '%(message)s'
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('testdroid')
 logger.setLevel(logging.INFO)
@@ -119,7 +119,7 @@ class Testdroid:
                 headers = { "Accept": "application/json" }
                 )
             if res.status_code != 200:
-                print "FAILED: Authentication or connection failure. Check Cloud url and your credentials"
+                print "FAILED: Authentication or connection failure. Check Testdroid Cloud URL and your credentials."
                 sys.exit(-1)
 
             reply = res.json()
@@ -222,6 +222,8 @@ class Testdroid:
     def get_me(self):
         return self.get("me")
 
+    """ Returns list of device groups
+    """
     def get_device_groups(self):
         return self.get("me/device-groups")
 
@@ -230,10 +232,11 @@ class Testdroid:
     def get_devices(self, limit=0):
         return self.get("devices?limit=%s" % (limit))
 
+    """ Print device groups
+    """
     def print_device_groups(self):
         for device_group in self.get_device_groups()['data']:
             print "%s %s %s %s devices" % (str(device_group['id']).ljust(12), device_group['displayName'].ljust(30), device_group['osType'].ljust(10), device_group['deviceCount'])
-
 
     """ Create a project
     """
@@ -243,6 +246,8 @@ class Testdroid:
 
         logger.info("Project %s: %s (%s) created" % (project['id'], project['name'], project['type'] ))
 
+    """ Delete a project
+    """
     def delete_project(self, project_id):
         project = self.get_project(project_id)
         if project:
@@ -253,7 +258,7 @@ class Testdroid:
     def get_projects(self):
         return self.get("me/projects")
 
-    """ Returns one single project
+    """ Returns a single project
     """
     def get_project(self, project_id):
         return self.get("me/projects/%s" % project_id)
@@ -281,6 +286,13 @@ class Testdroid:
         path = "users/%s/projects/%s/files/test" % (me['id'], project_id)
         self.upload(path=path, filename=filename)
 
+    """ Upload additional data file to project
+    """
+    def upload_data_file(self, project_id, filename):
+        me = self.get_me()
+        path = "users/%s/projects/%s/files/data" % (me['id'], project_id)
+        self.upload(path=path, filename=filename)
+
     """ Set project parameters
     """
     def set_project_parameters(self, project_id, parameters):
@@ -300,8 +312,8 @@ class Testdroid:
             sys.exit(1)
 
         if device_group_id is None and device_model_ids is None:
-            print "Device group or Device models must be defined"
-            sys.exit(1) 
+            print "Device group or device models must be defined"
+            sys.exit(1)
 
         if device_group_id is not None:
             device_group = self.get("/users/%s/device-groups/%s" % (me['id'], device_group_id))
@@ -332,11 +344,10 @@ class Testdroid:
         payload={'deviceModelId':device_model_id}
         return self.post("me/device-sessions", payload)
     
-    """ Stop device sessions
+    """ Stop device session
     """
     def stop_device_session(self, device_session_id):
         return self.post("me/device-sessions/%s/release" % (device_session_id))
-
 
     """ Get all test runs for a project
     """
@@ -409,15 +420,17 @@ Commands:
                                                         APPIUM_ANDROID
                                                         APPIUM_IOS
                                                         CALABASH
+                                                        CALABASH_IOS
     delete-project <id>                         Delete a project
     projects                                    Get projects
     upload-application <project-id> <filename>  Upload application to project
     upload-test <project-id> <filename>         Upload test file to project
+    upload-data <project-id> <filename>         Upload additional data file to project
     start-test-run <project-id> <device-group-id> Start a test run
     test-runs <project-id>                      Get test runs for a project
     test-run <project-id> <test-run-id>         Get test run details
     device-runs <project-id> <test-run-id>      Get device runs for a test run
-    download-test-run <id>                      Download test run data. Data will be downloaded to
+    download-test-run <project-id> <test-run-id> Download test run data. Data will be downloaded to
                                                 current directory in a structure:
                                                 [test-run-id]/[device-run-id]-[device-name]/files...
 """
@@ -443,6 +456,7 @@ Commands:
             "delete-project": self.delete_project,
             "upload-application": self.upload_application_file,
             "upload-test": self.upload_test_file,
+            "upload-data": self.upload_data_file,
             "start-test-run": self.start_test_run,
             "test-run": self.get_test_run,
             "test-runs": self.print_project_test_runs,
