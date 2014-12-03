@@ -151,6 +151,7 @@ class Testdroid:
             self.access_token = reply['access_token']
             self.refresh_token = reply['refresh_token']
             self.token_expiration_time = time.time() + reply['expires_in']
+
         return self.access_token
 
     """ Helper method for getting necessary headers to use for API calls, including authentication
@@ -356,14 +357,23 @@ class Testdroid:
             print "Awaiting completion of test run with id %s. Will wait forever polling every %smins." % (test_run_id, Testdroid.polling_interval_mins)
             while True:
                 time.sleep(Testdroid.polling_interval_mins*60)
-                self.get_token() #in case it expired
+                self.access_token = None    #WORKAROUND: access token thinks it's still valid,
+                                            # > token valid for another 633.357925177
+                                            #whilst this happens:
+                                            # > Couldn't establish the state of the test run with id: 72593732. Aborting
+                                            # > {u'error_description': u'Invalid access token: b3e62604-9d2a-49dc-88f5-89786ff5a6b6', u'error': u'invalid_token'}
+
+                self.get_token()            #in case it expired
                 testRunStatus = self.get_test_run(project_id, test_run_id)
                 if testRunStatus and testRunStatus.has_key('state'):
                     if testRunStatus['state'] == "FINISHED":
-                        print "The test run with id: %s is FINISHED" % test_run_id
+                        print "The test run with id: %s has FINISHED" % test_run_id
                         break
                     elif testRunStatus['state'] == "WAITING":
-                        print "[%s] The test run with id: %s is still in progress..." % (time.strftime("%H:%M:%S"), test_run_id)
+                        print "[%s] The test run with id: %s is awaiting to be scheduled" % (time.strftime("%H:%M:%S"), test_run_id)
+                        continue
+                    elif testRunStatus['state'] == "RUNNING":
+                        print "[%s] The test run with id: %s is running" % (time.strftime("%H:%M:%S"), test_run_id)
                         continue
 
                 print "Couldn't establish the state of the test run with id: %s. Aborting" % test_run_id
