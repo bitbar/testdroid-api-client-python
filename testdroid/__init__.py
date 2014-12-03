@@ -75,6 +75,8 @@ class Testdroid:
     token_expiration_time = None
     # Buffer size used for downloads
     download_buffer_size = 65536
+    # polling interval when awaiting for test run completion
+    polling_interval_mins = 10
 
     """ Simple constructor, defaults against cloud.testdroid.com
     """
@@ -148,7 +150,7 @@ class Testdroid:
 
             self.access_token = reply['access_token']
             self.refresh_token = reply['refresh_token']
-            self.token_expiration_time = time.time() + reply['expires_in']   
+            self.token_expiration_time = time.time() + reply['expires_in']
         return self.access_token
 
     """ Helper method for getting necessary headers to use for API calls, including authentication
@@ -327,23 +329,55 @@ class Testdroid:
                 print "Unable to set used device group to %s for project %s" % (device_group_id, project_id)
                 sys.exit(1)
             print "Starting test run on project %s \"%s\" using device group %s \"%s\"" % (project['id'], project['name'], device_group['id'], device_group['displayName'])
-        
+
         else:
             payload={'usedDeviceIds[]': device_model_ids}
             print "Starting test run on project %s \"%s\" using device models ids %s \"%s\"" % (project['id'], project['name'], device_model_ids)
- 
+
         # Start run
         path = "/users/%s/projects/%s/runs" %  ( me['id'], project_id )
         reply = self.post(path=path, payload=payload)
         print "Test run id: %s" % reply['id']
         print "Name: %s" % reply['displayName']
+        return reply['id']
+
+
+    """ Start a test run on a device group and wait for completion
+    """
+    def start_wait_test_run(self, project_id, device_group_id=None, device_model_ids=None):
+        self.wait_test_run(
+            project_id, self.start_test_run(project_id, device_group_id, device_model_ids)
+        )
+
+    """ Awaits completion of the given test run
+    """
+    def wait_test_run(self, project_id, test_run_id):
+        if test_run_id:
+            print "Awaiting completion of test run with id %s. Will wait forever polling every %smins." % (test_run_id, Testdroid.polling_interval_mins)
+            while True:
+                time.sleep(Testdroid.polling_interval_mins*60)
+                self.get_token() #in case it expired
+                testRunStatus = self.get_test_run(project_id, test_run_id)
+                if testRunStatus and testRunStatus.has_key('state'):
+                    if testRunStatus['state'] == "FINISHED":
+                        print "The test run with id: %s is FINISHED" % test_run_id
+                        break
+                    elif testRunStatus['state'] == "WAITING":
+                        print "[%s] The test run with id: %s is still in progress..." % (time.strftime("%H:%M:%S"), test_run_id)
+                        continue
+
+                print "Couldn't establish the state of the test run with id: %s. Aborting" % test_run_id
+                print testRunStatus
+                sys.exit(1)
+
+        return test_run_id
 
     """ Start device sessions
     """
     def start_device_session(self, device_model_id):
         payload={'deviceModelId':device_model_id}
         return self.post("me/device-sessions", payload)
-    
+
     """ Stop device session
     """
     def stop_device_session(self, device_session_id):
@@ -427,6 +461,8 @@ Commands:
     upload-test <project-id> <filename>         Upload test file to project
     upload-data <project-id> <filename>         Upload additional data file to project
     start-test-run <project-id> <device-group-id> Start a test run
+    start-wait-test-run <project-id> <device-group-id> Start a test run and await completion (polling)
+    wait-test-run <project-id> <test-run-id>    Await completion (polling) of the test run
     test-runs <project-id>                      Get test runs for a project
     test-run <project-id> <test-run-id>         Get test run details
     device-runs <project-id> <test-run-id>      Get device runs for a test run
@@ -458,6 +494,8 @@ Commands:
             "upload-test": self.upload_test_file,
             "upload-data": self.upload_data_file,
             "start-test-run": self.start_test_run,
+            "start-wait-test-run":self.start_wait_test_run,
+            "wait-test-run":self.wait_test_run,
             "test-run": self.get_test_run,
             "test-runs": self.print_project_test_runs,
             "device-runs": self.get_device_runs,
