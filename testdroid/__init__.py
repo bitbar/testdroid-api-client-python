@@ -292,7 +292,6 @@ class Testdroid:
     """ Delete project parameter
     """
     def delete_project_parameters(self, project_id, parameter_id):
-        #http://184.169.140.47/testdroid-cloud/api/v2/users/100100/projects/100291/config/parameters/35
         me = self.get_me()
         path = "/users/%s/projects/%s/config/parameters/%s" % ( me['id'], project_id, parameter_id )
         reply = self.delete(path=path)
