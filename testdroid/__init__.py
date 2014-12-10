@@ -281,6 +281,20 @@ class Testdroid:
         path = "users/%s/projects/%s/files/test" % (me['id'], project_id)
         self.upload(path=path, filename=filename)
 
+    """ Delete project parameter
+    """
+    def delete_project_parameters(self, project_id, parameter_id):
+        #http://184.169.140.47/testdroid-cloud/api/v2/users/100100/projects/100291/config/parameters/35
+        me = self.get_me()
+        path = "/users/%s/projects/%s/config/parameters/%s" % ( me['id'], project_id, parameter_id )
+        reply = self.delete(path=path)
+
+    """ Get project parameters
+    """
+    def get_project_parameters(self, project_id):
+        path = "/me/projects/%s/config/parameters" % ( project_id )
+        return self.get(path=path)
+
     """ Set project parameters
     """
     def set_project_parameters(self, project_id, parameters):
@@ -318,7 +332,7 @@ class Testdroid:
         
         else:
             payload={'usedDeviceIds[]': device_model_ids}
-            print "Starting test run on project %s \"%s\" using device models ids %s \"%s\"" % (project['id'], project['name'], device_model_ids)
+            print "Starting test run on project %s \"%s\" using device models ids %s " % (project['id'], project['name'], device_model_ids)
  
         # Start run
         path = "/users/%s/projects/%s/runs" %  ( me['id'], project_id )
