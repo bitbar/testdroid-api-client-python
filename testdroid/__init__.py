@@ -75,6 +75,8 @@ class Testdroid:
     token_expiration_time = None
     # Buffer size used for downloads
     download_buffer_size = 65536
+    # polling interval when awaiting for test run completion
+    polling_interval_mins = 10
 
     """ Simple constructor, defaults against cloud.testdroid.com
     """
@@ -148,7 +150,8 @@ class Testdroid:
 
             self.access_token = reply['access_token']
             self.refresh_token = reply['refresh_token']
-            self.token_expiration_time = time.time() + reply['expires_in']   
+            self.token_expiration_time = time.time() + reply['expires_in']
+
         return self.access_token
 
     """ Helper method for getting necessary headers to use for API calls, including authentication
@@ -341,23 +344,70 @@ class Testdroid:
                 print "Unable to set used device group to %s for project %s" % (device_group_id, project_id)
                 sys.exit(1)
             print "Starting test run on project %s \"%s\" using device group %s \"%s\"" % (project['id'], project['name'], device_group['id'], device_group['displayName'])
-        
+
         else:
             payload={'usedDeviceIds[]': device_model_ids}
             print "Starting test run on project %s \"%s\" using device models ids %s " % (project['id'], project['name'], device_model_ids)
- 
+
         # Start run
         path = "/users/%s/projects/%s/runs" %  ( me['id'], project_id )
         reply = self.post(path=path, payload=payload)
         print "Test run id: %s" % reply['id']
         print "Name: %s" % reply['displayName']
+        return reply['id']
+
+
+    """ Start a test run on a device group and wait for completion
+    """
+    def start_wait_test_run(self, project_id, device_group_id=None, device_model_ids=None):
+        test_run_id = self.start_test_run(project_id, device_group_id, device_model_ids)
+        self.wait_test_run(project_id, test_run_id)
+        return test_run_id
+
+
+    """ Start a test run on a device group, wait for completion and download results
+    """
+    def start_wait_download_test_run(self, project_id, device_group_id=None, device_model_ids=None):
+        test_run_id = self.start_wait_test_run(project_id, device_group_id, device_model_ids)
+        self.download_test_run(project_id, test_run_id)
+
+    """ Awaits completion of the given test run
+    """
+    def wait_test_run(self, project_id, test_run_id):
+        if test_run_id:
+            print "Awaiting completion of test run with id %s. Will wait forever polling every %smins." % (test_run_id, Testdroid.polling_interval_mins)
+            while True:
+                time.sleep(Testdroid.polling_interval_mins*60)
+                self.access_token = None    #WORKAROUND: access token thinks it's still valid,
+                                            # > token valid for another 633.357925177
+                                            #whilst this happens:
+                                            # > Couldn't establish the state of the test run with id: 72593732. Aborting
+                                            # > {u'error_description': u'Invalid access token: b3e62604-9d2a-49dc-88f5-89786ff5a6b6', u'error': u'invalid_token'}
+
+                self.get_token()            #in case it expired
+                testRunStatus = self.get_test_run(project_id, test_run_id)
+                if testRunStatus and testRunStatus.has_key('state'):
+                    if testRunStatus['state'] == "FINISHED":
+                        print "The test run with id: %s has FINISHED" % test_run_id
+                        break
+                    elif testRunStatus['state'] == "WAITING":
+                        print "[%s] The test run with id: %s is awaiting to be scheduled" % (time.strftime("%H:%M:%S"), test_run_id)
+                        continue
+                    elif testRunStatus['state'] == "RUNNING":
+                        print "[%s] The test run with id: %s is running" % (time.strftime("%H:%M:%S"), test_run_id)
+                        continue
+
+                print "Couldn't establish the state of the test run with id: %s. Aborting" % test_run_id
+                print testRunStatus
+                sys.exit(1)
+
 
     """ Start device sessions
     """
     def start_device_session(self, device_model_id):
         payload={'deviceModelId':device_model_id}
         return self.post("me/device-sessions", payload)
-    
+
     """ Stop device session
     """
     def stop_device_session(self, device_session_id):
@@ -441,6 +491,10 @@ Commands:
     upload-test <project-id> <filename>         Upload test file to project
     upload-data <project-id> <filename>         Upload additional data file to project
     start-test-run <project-id> <device-group-id> Start a test run
+    start-wait-download-test-run <project-id> <device-group-id>
+                                                Start a test run, await completion (polling) and
+                                                download results
+    wait-test-run <project-id> <test-run-id>    Await completion (polling) of the test run
     test-runs <project-id>                      Get test runs for a project
     test-run <project-id> <test-run-id>         Get test run details
     device-runs <project-id> <test-run-id>      Get device runs for a test run
@@ -472,6 +526,8 @@ Commands:
             "upload-test": self.upload_test_file,
             "upload-data": self.upload_data_file,
             "start-test-run": self.start_test_run,
+            "start-wait-download-test-run":self.start_wait_download_test_run,
+            "wait-test-run":self.wait_test_run,
             "test-run": self.get_test_run,
             "test-runs": self.print_project_test_runs,
             "device-runs": self.get_device_runs,
