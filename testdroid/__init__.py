@@ -346,9 +346,16 @@ class Testdroid:
     """ Start a test run on a device group and wait for completion
     """
     def start_wait_test_run(self, project_id, device_group_id=None, device_model_ids=None):
-        self.wait_test_run(
-            project_id, self.start_test_run(project_id, device_group_id, device_model_ids)
-        )
+        test_run_id = self.start_test_run(project_id, device_group_id, device_model_ids)
+        self.wait_test_run(project_id, test_run_id)
+        return test_run_id
+
+
+    """ Start a test run on a device group, wait for completion and download results
+    """
+    def start_wait_download_test_run(self, project_id, device_group_id=None, device_model_ids=None):
+        test_run_id = self.start_wait_test_run(project_id, device_group_id, device_model_ids)
+        self.download_test_run(project_id, test_run_id)
 
     """ Awaits completion of the given test run
     """
@@ -380,7 +387,6 @@ class Testdroid:
                 print testRunStatus
                 sys.exit(1)
 
-        return test_run_id
 
     """ Start device sessions
     """
@@ -471,7 +477,9 @@ Commands:
     upload-test <project-id> <filename>         Upload test file to project
     upload-data <project-id> <filename>         Upload additional data file to project
     start-test-run <project-id> <device-group-id> Start a test run
-    start-wait-test-run <project-id> <device-group-id> Start a test run and await completion (polling)
+    start-wait-download-test-run <project-id> <device-group-id>
+                                                Start a test run, await completion (polling) and
+                                                download results
     wait-test-run <project-id> <test-run-id>    Await completion (polling) of the test run
     test-runs <project-id>                      Get test runs for a project
     test-run <project-id> <test-run-id>         Get test run details
@@ -504,7 +512,7 @@ Commands:
             "upload-test": self.upload_test_file,
             "upload-data": self.upload_data_file,
             "start-test-run": self.start_test_run,
-            "start-wait-test-run":self.start_wait_test_run,
+            "start-wait-download-test-run":self.start_wait_download_test_run,
             "wait-test-run":self.wait_test_run,
             "test-run": self.get_test_run,
             "test-runs": self.print_project_test_runs,
