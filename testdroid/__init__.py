@@ -289,6 +289,19 @@ class Testdroid:
         path = "users/%s/projects/%s/files/test" % (me['id'], project_id)
         self.upload(path=path, filename=filename)
 
+    """ Delete project parameter
+    """
+    def delete_project_parameters(self, project_id, parameter_id):
+        me = self.get_me()
+        path = "/users/%s/projects/%s/config/parameters/%s" % ( me['id'], project_id, parameter_id )
+        reply = self.delete(path=path)
+
+    """ Get project parameters
+    """
+    def get_project_parameters(self, project_id):
+        path = "/me/projects/%s/config/parameters" % ( project_id )
+        return self.get(path=path)
+
     """ Upload additional data file to project
     """
     def upload_data_file(self, project_id, filename):
@@ -333,7 +346,7 @@ class Testdroid:
 
         else:
             payload={'usedDeviceIds[]': device_model_ids}
-            print "Starting test run on project %s \"%s\" using device models ids %s \"%s\"" % (project['id'], project['name'], device_model_ids)
+            print "Starting test run on project %s \"%s\" using device models ids %s " % (project['id'], project['name'], device_model_ids)
 
         # Start run
         path = "/users/%s/projects/%s/runs" %  ( me['id'], project_id )
