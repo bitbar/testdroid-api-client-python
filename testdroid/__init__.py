@@ -434,6 +434,11 @@ class Testdroid:
     def get_device_runs(self, project_id, test_run_id, limit=100):
         return self.get("me/projects/%s/runs/%s/device-runs?limit=%s" % (project_id, test_run_id, limit))
 
+    """ Downloads screenshots list for a device run
+    """
+    def get_device_run_screenshots_list(self, project_id, test_run_id, device_run_id):
+        return self.get("me/projects/%s/runs/%s/device-runs/%s/screenshots" % (project_id, test_run_id, device_run_id))
+
     """ Downloads test run results to a directory hierarchy
     """
     def download_test_run(self, project_id, test_run_id):
@@ -463,6 +468,36 @@ class Testdroid:
 
             else:
                 logger.info("Device %s has not finished - skipping" % device_run['device']['displayName'])
+
+    """ Downloads test run screenshots
+    """
+    def download_test_screenshots(self, project_id, test_run_id):
+        test_run = self.get_test_run(project_id, test_run_id)
+        device_runs = self.get_device_runs(project_id, test_run_id)
+        logger.info("Test run %s: \"%s\" has %s device runs:" % (test_run['id'], test_run['displayName'], len(device_runs['data'])))
+        for device_run in device_runs['data']:
+            logger.info("%s \"%s\" %s" % (device_run['id'], device_run['device']['displayName'], device_run['currentState']['status']))
+
+        logger.info("");
+
+        for device_run in device_runs['data']:
+            if device_run['currentState']['status'] == "SUCCEEDED":
+                directory = "%s-%s/%d-%s/screenshots" % (test_run['id'], test_run['displayName'], device_run['id'], device_run['device']['displayName'])
+
+                screenshots = self.get_device_run_screenshots_list(project_id, test_run_id, device_run['id'])
+
+                for screenshot in screenshots['data']:
+                    full_path = "%s/%s" % (directory, screenshot['originalName'])
+                    if not os.path.exists(directory):
+                        os.makedirs(directory)
+                    url = "me/projects/%s/runs/%s/device-runs/%s/screenshots/%s" % (project_id, test_run['id'], device_run['id'], screenshot['id'])
+
+                    prog = DownloadProgressBar()
+                    self.download(url, full_path, callback=lambda pos, total: prog.update(int(pos), int(total)))
+                    print
+
+            else:
+                logger.info("Device %s has failed or has not finished - skipping" % device_run['device']['displayName'])
 
     def get_parser(self):
         class MyParser(OptionParser):
@@ -500,6 +535,11 @@ Commands:
     download-test-run <project-id> <test-run-id> Download test run data. Data will be downloaded to
                                                 current directory in a structure:
                                                 [test-run-id]/[device-run-id]-[device-name]/files...
+    download-test-screenshots <project-id> <test-run-id> 
+                                                Download test run data. Data will be downloaded to
+                                                current directory in a structure:
+                                                [test-run-id]/[device-run-id]-[device-name]/files...
+
 """
         parser = MyParser(usage=usage, description=description, epilog=epilog,  version="%s %s" % ("%prog", __version__))
         parser.add_option("-u", "--username", dest="username",
@@ -530,7 +570,8 @@ Commands:
             "test-run": self.get_test_run,
             "test-runs": self.print_project_test_runs,
             "device-runs": self.get_device_runs,
-            "download-test-run": self.download_test_run
+            "download-test-run": self.download_test_run,
+            "download-test-screenshots": self.download_test_screenshots
         }
         return commands
 
