@@ -536,7 +536,8 @@ Commands:
     upload-application <project-id> <filename>  Upload application to project
     upload-test <project-id> <filename>         Upload test file to project
     upload-data <project-id> <filename>         Upload additional data file to project
-    set-project-config <project-id> <config-json> Change the project config parameters as facilitated by the API:
+    set-project-config <project-id> <config-json>
+                                                Change the project config parameters as facilitated by the API:
                                                 http://docs.testdroid.com/_pages/client.html#project-config
                                                 e.g.:
                                                 ./testdroid-api-client set-project-config 1234 '{"limitationType":"CLASS", "limitationValue":"com.foo.test.VerifyFoo"}'
@@ -548,7 +549,8 @@ Commands:
     test-runs <project-id>                      Get test runs for a project
     test-run <project-id> <test-run-id>         Get test run details
     device-runs <project-id> <test-run-id>      Get device runs for a test run
-    download-test-run <project-id> <test-run-id> Download test run data. Data will be downloaded to
+    download-test-run <project-id> <test-run-id>
+                                                Download test run data. Data will be downloaded to
                                                 current directory in a structure:
                                                 [test-run-id]/[device-run-id]-[device-name]/files...
     download-test-screenshots <project-id> <test-run-id>
