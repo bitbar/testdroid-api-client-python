@@ -7,7 +7,7 @@ from collections import namedtuple
 from datetime import datetime
 
 FORMAT = '%(message)s'
-__version__ = '0.1.5'
+__version__ = '0.1.6.dev'
 logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('testdroid')
 logger.setLevel(logging.INFO)
