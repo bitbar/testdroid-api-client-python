@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import os, sys, requests, json, logging, time, httplib
+import os, sys, requests, json, logging, time, httplib, Image
 from optparse import OptionParser
 from urlparse import urljoin
 from collections import namedtuple
@@ -163,25 +163,30 @@ class Testdroid:
     """
     def download(self, path=None, filename=None, payload={}, callback=None):
         url = "%s/api/v2/%s" % (self.cloud_url, path)
-        res = requests.get(url, params=payload, headers=self._build_headers(), stream=True)
+        try:
+            res = requests.get(url, params=payload, headers=self._build_headers(), stream=True, timeout=(60.0))
 
-        if res.status_code == 200:
-            logger.info("Downloading %s (%s bytes)" % (filename, res.headers["Content-Length"]))
-            pos = 0
-            total = res.headers['content-length']
+            if res.status_code == 200:
+                logger.info("Downloading %s (%s bytes)" % (filename, res.headers["Content-Length"]))
+                pos = 0
+                total = res.headers['content-length']
 
-            fd = os.open(filename, os.O_RDWR|os.O_CREAT)
-            for chunk in res.iter_content(self.download_buffer_size):
-                os.write(fd, chunk)
-                if callback:
-                    pos += len(chunk)
-                    callback(pos, total)
-                    time.sleep(0.1)
-            os.close(fd)
-        else:
-            logger.info("Resource not found: %s", path)
+                fd = os.open(filename, os.O_RDWR|os.O_CREAT)
+                for chunk in res.iter_content(self.download_buffer_size):
+                    os.write(fd, chunk)
+                    if callback:
+                        pos += len(chunk)
+                        callback(pos, total)
+                        time.sleep(0.1)
+                os.close(fd)
+            else:
+                logger.info("Resource not found: %s", path)
 
-        res.close()
+            res.close()
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+            logger.info("")
+            logger.info("Download has failed. Please try to restart your download")
+            sys.exit()
 
     """ Upload file to API resource
     """
@@ -491,23 +496,33 @@ class Testdroid:
             logger.info("%s \"%s\" %s" % (device_run['id'], device_run['device']['displayName'], device_run['currentState']['status']))
 
         logger.info("");
-
         for device_run in device_runs['data']:
             if device_run['currentState']['status'] == "SUCCEEDED":
                 directory = "%s-%s/%d-%s/screenshots" % (test_run['id'], test_run['displayName'], device_run['id'], device_run['device']['displayName'])
-
                 screenshots = self.get_device_run_screenshots_list(project_id, test_run_id, device_run['id'])
 
                 for screenshot in screenshots['data']:
                     full_path = "%s/%s" % (directory, screenshot['originalName'])
                     if not os.path.exists(directory):
                         os.makedirs(directory)
-                    url = "me/projects/%s/runs/%s/device-runs/%s/screenshots/%s" % (project_id, test_run['id'], device_run['id'], screenshot['id'])
 
-                    prog = DownloadProgressBar()
-                    self.download(url, full_path, callback=lambda pos, total: prog.update(int(pos), int(total)))
-                    print
-
+                    if not os.path.exists(full_path):
+                        url = "me/projects/%s/runs/%s/device-runs/%s/screenshots/%s" % (project_id, test_run['id'], device_run['id'], screenshot['id'])
+                        prog = DownloadProgressBar()
+                        self.download(url, full_path, callback=lambda pos, total: prog.update(int(pos), int(total)))
+                        print
+                    else:
+                        ''' Earlier downloaded images are checked, and if needed re-downloaded.
+                        '''
+                        try:
+                            im=Image.open(full_path)
+                            im.verify()
+                            logger.info("Screenshot %s already exists - skipping download" % full_path)
+                        except:
+                            url = "me/projects/%s/runs/%s/device-runs/%s/screenshots/%s" % (project_id, test_run['id'], device_run['id'], screenshot['id'])
+                            prog = DownloadProgressBar()
+                            self.download(url, full_path, callback=lambda pos, total: prog.update(int(pos), int(total)))
+                            print
             else:
                 logger.info("Device %s has failed or has not finished - skipping" % device_run['device']['displayName'])
 
