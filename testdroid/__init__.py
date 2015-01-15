@@ -7,7 +7,7 @@ from collections import namedtuple
 from datetime import datetime
 
 FORMAT = '%(message)s'
-__version__ = '0.1.3'
+__version__ = '0.1.5'
 logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('testdroid')
 logger.setLevel(logging.INFO)
@@ -317,6 +317,18 @@ class Testdroid:
         path = "/users/%s/projects/%s/config/parameters" % ( me['id'], project_id )
         reply = self.post(path=path, payload=parameters)
 
+
+    """ Set project config according to http://docs.testdroid.com/_pages/client.html#project-config
+    """
+    def set_project_config(self, project_id, payload):
+        #set the project config to reflect the given json payload
+        #e.g.: {'usedDeviceGroupId': 1234}
+        if isinstance(payload, str):
+            payload=json.loads(payload)
+        me = self.get_me()
+        path = "/users/%s/projects/%s/config" % ( me['id'], project_id )
+        return self.post(path=path, payload=payload)
+
     """ Start a test run on a device group
     """
     def start_test_run(self, project_id, device_group_id=None, device_model_ids=None):
@@ -337,8 +349,8 @@ class Testdroid:
                 print "Device group %s not found" % device_group_id
                 sys.exit(1)
             # Update device group
-            path = "/users/%s/projects/%s/config" % ( me['id'], project_id )
-            reply = self.post(path=path, payload={'usedDeviceGroupId': device_group_id})
+
+            reply = self.set_project_config(project_id=project_id, payload={'usedDeviceGroupId': device_group_id})
             if int(reply['usedDeviceGroupId']) != int(device_group_id):
                 print "Unable to set used device group to %s for project %s" % (device_group_id, project_id)
                 sys.exit(1)
@@ -524,6 +536,11 @@ Commands:
     upload-application <project-id> <filename>  Upload application to project
     upload-test <project-id> <filename>         Upload test file to project
     upload-data <project-id> <filename>         Upload additional data file to project
+    set-project-config <project-id> <config-json>
+                                                Change the project config parameters as facilitated by the API:
+                                                http://docs.testdroid.com/_pages/client.html#project-config
+                                                e.g.:
+                                                ./testdroid-api-client set-project-config 1234 '{"limitationType":"CLASS", "limitationValue":"com.foo.test.VerifyFoo"}'
     start-test-run <project-id> <device-group-id> Start a test run
     start-wait-download-test-run <project-id> <device-group-id>
                                                 Start a test run, await completion (polling) and
@@ -532,10 +549,11 @@ Commands:
     test-runs <project-id>                      Get test runs for a project
     test-run <project-id> <test-run-id>         Get test run details
     device-runs <project-id> <test-run-id>      Get device runs for a test run
-    download-test-run <project-id> <test-run-id> Download test run data. Data will be downloaded to
+    download-test-run <project-id> <test-run-id>
+                                                Download test run data. Data will be downloaded to
                                                 current directory in a structure:
                                                 [test-run-id]/[device-run-id]-[device-name]/files...
-    download-test-screenshots <project-id> <test-run-id> 
+    download-test-screenshots <project-id> <test-run-id>
                                                 Download test run data. Data will be downloaded to
                                                 current directory in a structure:
                                                 [test-run-id]/[device-run-id]-[device-name]/files...
@@ -564,6 +582,7 @@ Commands:
             "upload-application": self.upload_application_file,
             "upload-test": self.upload_test_file,
             "upload-data": self.upload_data_file,
+            "set-project-config": self.set_project_config,
             "start-test-run": self.start_test_run,
             "start-wait-download-test-run":self.start_wait_download_test_run,
             "wait-test-run":self.wait_test_run,
