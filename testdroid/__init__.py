@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import os, sys, requests, json, logging, time, httplib, Image
+import os, sys, requests, json, logging, time, httplib
+from PIL import Image
 from optparse import OptionParser
 from urlparse import urljoin
 from collections import namedtuple
 from datetime import datetime
 
 FORMAT = '%(message)s'
-__version__ = '0.1.7.dev'
+__version__ = '0.1.7'
 logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('testdroid')
 logger.setLevel(logging.INFO)
@@ -448,7 +449,7 @@ class Testdroid:
 
     """ Return device runs for a project
     """
-    def get_device_runs(self, project_id, test_run_id, limit=100):
+    def get_device_runs(self, project_id, test_run_id, limit=1000):
         return self.get("me/projects/%s/runs/%s/device-runs?limit=%s" % (project_id, test_run_id, limit))
 
     """ Downloads screenshots list for a device run
@@ -500,8 +501,10 @@ class Testdroid:
             if device_run['currentState']['status'] == "SUCCEEDED":
                 directory = "%s-%s/%d-%s/screenshots" % (test_run['id'], test_run['displayName'], device_run['id'], device_run['device']['displayName'])
                 screenshots = self.get_device_run_screenshots_list(project_id, test_run_id, device_run['id'])
+                no_screenshots = True
 
                 for screenshot in screenshots['data']:
+                    no_screenshots = False
                     full_path = "%s/%s" % (directory, screenshot['originalName'])
                     if not os.path.exists(directory):
                         os.makedirs(directory)
@@ -523,6 +526,9 @@ class Testdroid:
                             prog = DownloadProgressBar()
                             self.download(url, full_path, callback=lambda pos, total: prog.update(int(pos), int(total)))
                             print
+
+                if no_screenshots:
+                    logger.info("Device %s has no screenshots - skipping" % device_run['device']['displayName'])
             else:
                 logger.info("Device %s has failed or has not finished - skipping" % device_run['device']['displayName'])
 
