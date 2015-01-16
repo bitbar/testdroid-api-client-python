@@ -38,5 +38,10 @@ Set up sandbox
 
 Build example
 
-`python setup.py clean && python setup.py sdist && pip install -U dist/testdroid-0.1.2dev.tar.gz && bin/testdroid-api-client me`
+`python setup.py clean && python setup.py sdist && pip install -U dist/testdroid-0.1.7.tar.gz`
+
+Usage
+
+`testdroid`
+
 
