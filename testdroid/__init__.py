@@ -172,7 +172,7 @@ class Testdroid:
                 pos = 0
                 total = res.headers['content-length']
 
-                fd = os.open(filename, os.O_RDWR|os.O_CREAT)
+                fd = os.open(filename, os.O_RDWR|os.O_CREAT|os.O_BINARY)
                 for chunk in res.iter_content(self.download_buffer_size):
                     os.write(fd, chunk)
                     if callback:
