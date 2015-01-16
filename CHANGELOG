@@ -1,4 +1,16 @@
 
+0.1.6
+* Timeout for download request
+* Retry feature for screenshot download
+
+0.1.5
+* Ability to change the project config
+
+0.1.4
+* Add the facility to await (poll) a scheduled test run
+* Workaround for the token expiry problem
+* Download-on-finish function
+
 0.1.3
 * Support additional data zip upload
 
