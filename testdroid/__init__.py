@@ -501,8 +501,10 @@ class Testdroid:
             if device_run['currentState']['status'] == "SUCCEEDED":
                 directory = "%s-%s/%d-%s/screenshots" % (test_run['id'], test_run['displayName'], device_run['id'], device_run['device']['displayName'])
                 screenshots = self.get_device_run_screenshots_list(project_id, test_run_id, device_run['id'])
+                no_screenshots = True
 
                 for screenshot in screenshots['data']:
+                    no_screenshots = False
                     full_path = "%s/%s" % (directory, screenshot['originalName'])
                     if not os.path.exists(directory):
                         os.makedirs(directory)
@@ -524,6 +526,9 @@ class Testdroid:
                             prog = DownloadProgressBar()
                             self.download(url, full_path, callback=lambda pos, total: prog.update(int(pos), int(total)))
                             print
+
+                if no_screenshots:
+                    logger.info("Device %s has no screenshots - skipping" % device_run['device']['displayName'])
             else:
                 logger.info("Device %s has failed or has not finished - skipping" % device_run['device']['displayName'])
 
