@@ -29,7 +29,7 @@ Example:
 {u'displayName': u'Test Run 1', u'logZipState': u'BLANK', u'screenshotZipState': u'BLANK', u'projectId': 12340, u'number': 1, u'successRatio': 0.814815, u'createTime': 1393595647000, u'executionRatio': 1.0, u'state': u'FINISHED', u'startedByDisplayName': u'John Doe', u'id': 10} 
 ```
 
-+Developing and testing
+Developing and testing
 ----------------------
 
 Set up sandbox
@@ -38,5 +38,10 @@ Set up sandbox
 
 Build example
 
-`python setup.py clean && python setup.py sdist && pip install -U dist/testdroid-0.1.2dev.tar.gz && bin/testdroid-api-client me`
+`python setup.py clean && python setup.py sdist && pip install -U dist/testdroid-0.1.7.tar.gz`
+
+Usage
+
+`testdroid`
+
 
