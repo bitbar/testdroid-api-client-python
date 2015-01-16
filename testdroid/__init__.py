@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import os, sys, requests, json, logging, time, httplib, Image
+import os, sys, requests, json, logging, time, httplib
+from PIL import Image
 from optparse import OptionParser
 from urlparse import urljoin
 from collections import namedtuple
