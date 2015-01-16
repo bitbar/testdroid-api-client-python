@@ -448,7 +448,7 @@ class Testdroid:
 
     """ Return device runs for a project
     """
-    def get_device_runs(self, project_id, test_run_id, limit=100):
+    def get_device_runs(self, project_id, test_run_id, limit=1000):
         return self.get("me/projects/%s/runs/%s/device-runs?limit=%s" % (project_id, test_run_id, limit))
 
     """ Downloads screenshots list for a device run
