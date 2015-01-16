@@ -3,6 +3,7 @@
 * Fix pillow Image import
 * Add print for 'device has no screenshots'
 * Set maximum device run limit to 1000
+* Fix screenshot download on Windows environments
 
 0.1.6
 * Timeout for download request
