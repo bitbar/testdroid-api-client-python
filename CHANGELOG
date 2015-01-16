@@ -1,3 +1,8 @@
+0.1.7
+* Add pillow to required dependencies
+* Fix pillow Image import
+* Add print for 'device has no screenshots'
+* Set maximum device run limit to 1000
 
 0.1.6
 * Timeout for download request
