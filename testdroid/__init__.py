@@ -8,7 +8,7 @@ from collections import namedtuple
 from datetime import datetime
 
 FORMAT = '%(message)s'
-__version__ = '0.1.7'
+__version__ = '0.1.8'
 logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('testdroid')
 logger.setLevel(logging.INFO)
@@ -172,7 +172,12 @@ class Testdroid:
                 pos = 0
                 total = res.headers['content-length']
 
-                fd = os.open(filename, os.O_RDWR|os.O_CREAT|os.O_BINARY)
+                # Check if the system is Windows or not.
+                if os.name == 'nt':
+                    fd = os.open(filename, os.O_RDWR|os.O_CREAT|os.O_BINARY)
+                else:
+                    fd = os.open(filename, os.O_RDWR|os.O_CREAT)
+
                 for chunk in res.iter_content(self.download_buffer_size):
                     os.write(fd, chunk)
                     if callback:
