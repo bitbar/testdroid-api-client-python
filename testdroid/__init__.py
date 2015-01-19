@@ -173,7 +173,7 @@ class Testdroid:
                 total = res.headers['content-length']
 
                 # Check if the system is Windows or not.
-                if os.name == nt:
+                if os.name == 'nt':
                     fd = os.open(filename, os.O_RDWR|os.O_CREAT|os.O_BINARY)
                 else:
                     fd = os.open(filename, os.O_RDWR|os.O_CREAT)
