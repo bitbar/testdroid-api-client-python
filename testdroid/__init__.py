@@ -243,7 +243,7 @@ class Testdroid:
     """ Returns list of devices
     """
     def get_devices(self, limit=0):
-        return self.get("devices?limit=%s" % (limit))
+        return self.get(path = "devices", payload = {'limit': limit})
 
     """ Print device groups
     """
@@ -437,7 +437,7 @@ class Testdroid:
     """ Get all test runs for a project
     """
     def get_project_test_runs(self, project_id, limit=20):
-        return self.get("me/projects/%s/runs?limit=%s" % (project_id, limit))
+        return self.get(path = "me/projects/%s/runs" & project_id, payload = {'limit': limit})
 
     """ Print test runs of a project to console
     """
@@ -454,7 +454,7 @@ class Testdroid:
     """ Return device runs for a project
     """
     def get_device_runs(self, project_id, test_run_id, limit=1000):
-        return self.get("me/projects/%s/runs/%s/device-runs?limit=%s" % (project_id, test_run_id, limit))
+        return self.get(path = "me/projects/%s/runs/%s/device-runs" % (project_id, test_run_id), payload = {'limit': limit})
 
     """ Downloads screenshots list for a device run
     """
