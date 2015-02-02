@@ -453,13 +453,13 @@ class Testdroid:
 
     """ Return device runs for a project
     """
-    def get_device_runs(self, project_id, test_run_id, limit=1000):
+    def get_device_runs(self, project_id, test_run_id, limit=0):
         return self.get("me/projects/%s/runs/%s/device-runs?limit=%s" % (project_id, test_run_id, limit))
 
     """ Downloads screenshots list for a device run
     """
-    def get_device_run_screenshots_list(self, project_id, test_run_id, device_run_id):
-        return self.get("me/projects/%s/runs/%s/device-runs/%s/screenshots" % (project_id, test_run_id, device_run_id))
+    def get_device_run_screenshots_list(self, project_id, test_run_id, device_run_id, limit=0):
+        return self.get("me/projects/%s/runs/%s/device-runs/%s/screenshots?limit=%s" % (project_id, test_run_id, device_run_id, limit))
 
     """ Downloads test run results to a directory hierarchy
     """
