@@ -614,9 +614,9 @@ Commands:
                                                 current directory in a structure:
                                                 [test-run-id]/[device-run-id]-[device-name]/files...
     download-test-screenshots <project-id> <test-run-id>
-                                                Download test run data. Data will be downloaded to
+                                                Download test run screenshots. Screenshots will be downloaded to
                                                 current directory in a structure:
-                                                [test-run-id]/[device-run-id]-[device-name]/files...
+                                                [test-run-id]/[device-run-id]-[device-name]/screenshots/...
 
 """
         parser = MyParser(usage=usage, description=description, epilog=epilog,  version="%s %s" % ("%prog", __version__))

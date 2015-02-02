@@ -2,6 +2,7 @@
 * Fix Logger problem, caused by missing FORMAT definition
 * Add feature 'Print available free devices'
 * Set unlimited device run & screenshot downloads
+* Correct help text for screenshots download
 
 0.1.8
 * Fix file download for Linux and Mac machines.
