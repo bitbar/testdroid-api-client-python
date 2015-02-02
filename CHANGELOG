@@ -1,4 +1,5 @@
 0.1.9
+* Fix Logger problem, caused by missing FORMAT definition
 * Add feature 'Print available free devices'
 * Set unlimited device run & screenshot downloads
 
