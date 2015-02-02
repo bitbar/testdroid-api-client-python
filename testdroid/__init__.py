@@ -251,6 +251,39 @@ class Testdroid:
         for device_group in self.get_device_groups()['data']:
             print "%s %s %s %s devices" % (str(device_group['id']).ljust(12), device_group['displayName'].ljust(30), device_group['osType'].ljust(10), device_group['deviceCount'])
 
+    """ Print available free Android devices
+    """
+    def print_available_free_android_devices(self):
+        print ""
+        print "Available Free Android Devices"
+        print "------------------------------"
+
+        for device in self.get_devices()['data']:
+            if device['creditsPrice'] == 0 and device['locked'] == False and device['osType'] == "ANDROID":
+                    print device['displayName']
+
+        print ""
+
+    """ Print available free iOS devices
+    """
+    def print_available_free_ios_devices(self):
+        print ""
+        print "Available Free iOS Devices"
+        print "--------------------------"
+
+        for device in self.get_devices()['data']:
+            if device['creditsPrice'] == 0 and device['locked'] == False and device['osType'] == "IOS":
+                print device['displayName']
+
+        print ""
+
+    """ Print available free devices
+    """
+    def print_available_free_devices(self):
+        self.print_available_free_android_devices()
+        self.print_available_free_ios_devices()
+
+
     """ Create a project
     """
     def create_project(self, project_name, project_type):
@@ -546,6 +579,7 @@ class Testdroid:
 Commands:
 
     me                                          Get user details
+    available-free-devices                      Print list of currently available free devices
     device-groups                               Get list of your device groups
     create-project <name> <type>                Create a project
                                                 Type is one of:
@@ -601,6 +635,7 @@ Commands:
         commands = {
             "me": self.get_me,
             "device-groups": self.print_device_groups,
+            "available-free-devices": self.print_available_free_devices,
             "projects": self.print_projects,
             "create-project": self.create_project,
             "delete-project": self.delete_project,
