@@ -499,35 +499,42 @@ class Testdroid:
     def get_device_run_screenshots_list(self, project_id, test_run_id, device_run_id, limit=0):
         return self.get("me/projects/%s/runs/%s/device-runs/%s/screenshots?limit=%s" % (project_id, test_run_id, device_run_id, limit))
 
-    """ Downloads test run results to a directory hierarchy
+    """ Downloads test run files to a directory hierarchy
     """
     def download_test_run(self, project_id, test_run_id):
         test_run = self.get_test_run(project_id, test_run_id)
         device_runs = self.get_device_runs(project_id, test_run_id)
+
+        logger.info("")
         logger.info("Test run %s: \"%s\" has %s device runs:" % (test_run['id'], test_run['displayName'], len(device_runs['data'])))
-        for device_run in device_runs['data']:
-            logger.info("%s \"%s\" %s" % (device_run['id'], device_run['device']['displayName'], device_run['currentState']['status']))
-
-        logger.info("");
 
         for device_run in device_runs['data']:
-            if device_run['currentState']['status'] == "SUCCEEDED":
-                directory = "%s-%s/%d-%s" % (test_run['id'], test_run['displayName'], device_run['id'], device_run['device']['displayName'])
+            run_status = device_run['currentState']['status']
+            logger.info("")
+            logger.info("%s \"%s\" %s" % (device_run['id'], device_run['device']['displayName'], run_status))
 
-                filenames = ['junit.xml', 'logs', 'result-data.zip']
+            if run_status in ("SUCCEEDED", "FAILED"):
+                directory = "%s-%s/%d-%s" % (test_run_id, test_run['displayName'], device_run['id'], device_run['device']['displayName'])
+                session_id = device_run['deviceSessionId']
+                files = self.get("me/projects/%s/runs/%s/device-sessions/%s/output-file-set/files" % (project_id, test_run_id, session_id))
+                for file in files['data']:
+                    if file['state'] == "READY":
+                        full_path = "%s/%s" % (directory, file['name'])
+                        if not os.path.exists(directory):
+                            os.makedirs(directory)
 
-                for filename in filenames:
-                    full_path = "%s/%s" % (directory, filename)
-                    if not os.path.exists(directory):
-                        os.makedirs(directory)
-                    url = "me/projects/%s/runs/%d/device-runs/%d/%s" % (project_id, test_run['id'], device_run['id'], filename)
-
-                    prog = DownloadProgressBar()
-                    self.download(url, full_path, callback=lambda pos, total: prog.update(int(pos), int(total)))
-                    print
-
+                        url = "me/files/%s/file" % (file['id'])
+                        prog = DownloadProgressBar()
+                        self.download(url, full_path, callback=lambda pos, total: prog.update(int(pos), int(total)))
+                        print
+                    else:
+                        logger.info("File %s is not ready" % file['name'])
+                if( len(files['data']) == 0 ):
+                    logger.info("No files to download")
+                    logger.info("")
             else:
-                logger.info("Device %s has not finished - skipping" % device_run['device']['displayName'])
+                logger.info("Device run is not ended - Skipping file downloads")
+                logger.info("")
 
     """ Downloads test run screenshots
     """
