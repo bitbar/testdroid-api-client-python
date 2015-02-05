@@ -8,7 +8,12 @@ from collections import namedtuple
 from datetime import datetime
 
 __version__ = '0.1.9.dev'
-logging.basicConfig(format=FORMAT)
+try:
+    logging.basicConfig(format=FORMAT)
+except Exception, e:
+    print "Warning: %s. Using FORMAT='%s(message)s.'" % (e, "%s")
+    logging.basicConfig(format="%(message)s")
+
 logger = logging.getLogger('testdroid')
 logger.setLevel(logging.INFO)
 
@@ -251,6 +256,39 @@ class Testdroid:
         for device_group in self.get_device_groups()['data']:
             print "%s %s %s %s devices" % (str(device_group['id']).ljust(12), device_group['displayName'].ljust(30), device_group['osType'].ljust(10), device_group['deviceCount'])
 
+    """ Print available free Android devices
+    """
+    def print_available_free_android_devices(self):
+        print ""
+        print "Available Free Android Devices"
+        print "------------------------------"
+
+        for device in self.get_devices()['data']:
+            if device['creditsPrice'] == 0 and device['locked'] == False and device['osType'] == "ANDROID":
+                    print device['displayName']
+
+        print ""
+
+    """ Print available free iOS devices
+    """
+    def print_available_free_ios_devices(self):
+        print ""
+        print "Available Free iOS Devices"
+        print "--------------------------"
+
+        for device in self.get_devices()['data']:
+            if device['creditsPrice'] == 0 and device['locked'] == False and device['osType'] == "IOS":
+                print device['displayName']
+
+        print ""
+
+    """ Print available free devices
+    """
+    def print_available_free_devices(self):
+        self.print_available_free_android_devices()
+        self.print_available_free_ios_devices()
+
+
     """ Create a project
     """
     def create_project(self, project_name, project_type):
@@ -458,38 +496,45 @@ class Testdroid:
 
     """ Downloads screenshots list for a device run
     """
-    def get_device_run_screenshots_list(self, project_id, test_run_id, device_run_id):
-        return self.get("me/projects/%s/runs/%s/device-runs/%s/screenshots" % (project_id, test_run_id, device_run_id))
+    def get_device_run_screenshots_list(self, project_id, test_run_id, device_run_id, limit=0):
+        return self.get("me/projects/%s/runs/%s/device-runs/%s/screenshots" % (project_id, test_run_id, device_run_id), payload = {'limit': limit})
 
-    """ Downloads test run results to a directory hierarchy
+    """ Downloads test run files to a directory hierarchy
     """
     def download_test_run(self, project_id, test_run_id):
         test_run = self.get_test_run(project_id, test_run_id)
         device_runs = self.get_device_runs(project_id, test_run_id)
+
+        logger.info("")
         logger.info("Test run %s: \"%s\" has %s device runs:" % (test_run['id'], test_run['displayName'], len(device_runs['data'])))
-        for device_run in device_runs['data']:
-            logger.info("%s \"%s\" %s" % (device_run['id'], device_run['device']['displayName'], device_run['currentState']['status']))
-
-        logger.info("");
 
         for device_run in device_runs['data']:
-            if device_run['currentState']['status'] == "SUCCEEDED":
-                directory = "%s-%s/%d-%s" % (test_run['id'], test_run['displayName'], device_run['id'], device_run['device']['displayName'])
+            run_status = device_run['currentState']['status']
+            logger.info("")
+            logger.info("%s \"%s\" %s" % (device_run['id'], device_run['device']['displayName'], run_status))
 
-                filenames = ['junit.xml', 'logs', 'result-data.zip']
+            if run_status in ("SUCCEEDED", "FAILED"):
+                directory = "%s-%s/%d-%s" % (test_run_id, test_run['displayName'], device_run['id'], device_run['device']['displayName'])
+                session_id = device_run['deviceSessionId']
+                files = self.get("me/projects/%s/runs/%s/device-sessions/%s/output-file-set/files" % (project_id, test_run_id, session_id))
+                for file in files['data']:
+                    if file['state'] == "READY":
+                        full_path = "%s/%s" % (directory, file['name'])
+                        if not os.path.exists(directory):
+                            os.makedirs(directory)
 
-                for filename in filenames:
-                    full_path = "%s/%s" % (directory, filename)
-                    if not os.path.exists(directory):
-                        os.makedirs(directory)
-                    url = "me/projects/%s/runs/%d/device-runs/%d/%s" % (project_id, test_run['id'], device_run['id'], filename)
-
-                    prog = DownloadProgressBar()
-                    self.download(url, full_path, callback=lambda pos, total: prog.update(int(pos), int(total)))
-                    print
-
+                        url = "me/files/%s/file" % (file['id'])
+                        prog = DownloadProgressBar()
+                        self.download(url, full_path, callback=lambda pos, total: prog.update(int(pos), int(total)))
+                        print
+                    else:
+                        logger.info("File %s is not ready" % file['name'])
+                if( len(files['data']) == 0 ):
+                    logger.info("No files to download")
+                    logger.info("")
             else:
-                logger.info("Device %s has not finished - skipping" % device_run['device']['displayName'])
+                logger.info("Device run is not ended - Skipping file downloads")
+                logger.info("")
 
     """ Downloads test run screenshots
     """
@@ -546,6 +591,7 @@ class Testdroid:
 Commands:
 
     me                                          Get user details
+    available-free-devices                      Print list of currently available free devices
     device-groups                               Get list of your device groups
     create-project <name> <type>                Create a project
                                                 Type is one of:
@@ -579,9 +625,9 @@ Commands:
                                                 current directory in a structure:
                                                 [test-run-id]/[device-run-id]-[device-name]/files...
     download-test-screenshots <project-id> <test-run-id>
-                                                Download test run data. Data will be downloaded to
+                                                Download test run screenshots. Screenshots will be downloaded to
                                                 current directory in a structure:
-                                                [test-run-id]/[device-run-id]-[device-name]/files...
+                                                [test-run-id]/[device-run-id]-[device-name]/screenshots/...
 
 """
         parser = MyParser(usage=usage, description=description, epilog=epilog,  version="%s %s" % ("%prog", __version__))
@@ -601,6 +647,7 @@ Commands:
         commands = {
             "me": self.get_me,
             "device-groups": self.print_device_groups,
+            "available-free-devices": self.print_available_free_devices,
             "projects": self.print_projects,
             "create-project": self.create_project,
             "delete-project": self.delete_project,
