@@ -8,8 +8,12 @@ from collections import namedtuple
 from datetime import datetime
 
 __version__ = '0.1.9.dev'
-FORMAT = "%(message)s"
-logging.basicConfig(format=FORMAT)
+try:
+    logging.basicConfig(format=FORMAT)
+except Exception, e:
+    print "Warning: %s. Using FORMAT='%s(message)s.'" % (e, "%s")
+    logging.basicConfig(format="%(message)s")
+
 logger = logging.getLogger('testdroid')
 logger.setLevel(logging.INFO)
 
