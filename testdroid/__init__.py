@@ -437,7 +437,7 @@ class Testdroid:
     """ Get all test runs for a project
     """
     def get_project_test_runs(self, project_id, limit=20):
-        return self.get(path = "me/projects/%s/runs" & project_id, payload = {'limit': limit})
+        return self.get(path = "me/projects/%s/runs" % (project_id), payload = {'limit': limit})
 
     """ Print test runs of a project to console
     """
