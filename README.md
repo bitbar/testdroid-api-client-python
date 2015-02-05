@@ -1,11 +1,22 @@
 Python client for Testdroid Cloud APIv2
 =======================================
 
+Dependencies
+-----
+
+For Linux installatin you need Python dev package.
+
+Ubuntu
+`sudo apt-get install python-dev`
+
 Command line
 -----
 
 Install it with:
 `sudo pip install testdroid`
+
+Upgrade it with:
+`sudo pip install testdroid --upgrade`
 
 Usage
 -----
@@ -44,4 +55,9 @@ Usage
 
 `testdroid`
 
+
+Troubleshooting
+-----
+
+If you see Pillow error messages on Linux you are most likely missing python-dev, see dependencies.
 
