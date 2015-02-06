@@ -2,7 +2,7 @@
 from setuptools import setup, find_packages
 import sys, os
 
-version = '0.1.8'
+version = '0.1.9'
 
 setup(name='testdroid',
       version=version,
@@ -13,7 +13,7 @@ Testdroid API client for Python""",
         'Topic :: Software Development', 
         'Intended Audience :: Developers'], # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
       keywords='testdroid rest api client',
-      author='Henri Kivelä <henri.kivela@bitbar.com>, Sakari Rautiainen <sakari.rautiainen@bitbar.com>, Teppo Malinen <teppo.malinen@bitbar.com, Jarno Tuovinen <jarno.tuovinen@bitbar.com>',
+      author='Henri Kivelä <henri.kivela@bitbar.com>, Sakari Rautiainen <sakari.rautiainen@bitbar.com>, Teppo Malinen <teppo.malinen@bitbar.com>, Jarno Tuovinen <jarno.tuovinen@bitbar.com>',
       author_email='info@bitbar.com',
       url='http://www.testdroid.com',
       license='Apache License v2.0',

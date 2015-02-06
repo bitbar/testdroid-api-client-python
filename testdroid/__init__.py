@@ -7,9 +7,13 @@ from urlparse import urljoin
 from collections import namedtuple
 from datetime import datetime
 
-FORMAT = '%(message)s'
-__version__ = '0.1.8'
-logging.basicConfig(format=FORMAT)
+__version__ = '0.1.9'
+try:
+    logging.basicConfig(format=FORMAT)
+except Exception, e:
+    print "Warning: %s. Using FORMAT='%s(message)s.'" % (e, "%s")
+    logging.basicConfig(format="%(message)s")
+
 logger = logging.getLogger('testdroid')
 logger.setLevel(logging.INFO)
 
@@ -238,19 +242,52 @@ class Testdroid:
 
     """ Returns list of device groups
     """
-    def get_device_groups(self):
-        return self.get("me/device-groups")
+    def get_device_groups(self, limit=0):
+        return self.get("me/device-groups", payload = {'limit': limit})
 
     """ Returns list of devices
     """
     def get_devices(self, limit=0):
-        return self.get("devices?limit=%s" % (limit))
+        return self.get(path = "devices", payload = {'limit': limit})
 
     """ Print device groups
     """
-    def print_device_groups(self):
-        for device_group in self.get_device_groups()['data']:
+    def print_device_groups(self, limit=0):
+        for device_group in self.get_device_groups(limit)['data']:
             print "%s %s %s %s devices" % (str(device_group['id']).ljust(12), device_group['displayName'].ljust(30), device_group['osType'].ljust(10), device_group['deviceCount'])
+
+    """ Print available free Android devices
+    """
+    def print_available_free_android_devices(self, limit=0):
+        print ""
+        print "Available Free Android Devices"
+        print "------------------------------"
+
+        for device in self.get_devices(limit)['data']:
+            if device['creditsPrice'] == 0 and device['locked'] == False and device['osType'] == "ANDROID":
+                    print device['displayName']
+
+        print ""
+
+    """ Print available free iOS devices
+    """
+    def print_available_free_ios_devices(self, limit=0):
+        print ""
+        print "Available Free iOS Devices"
+        print "--------------------------"
+
+        for device in self.get_devices(limit)['data']:
+            if device['creditsPrice'] == 0 and device['locked'] == False and device['osType'] == "IOS":
+                print device['displayName']
+
+        print ""
+
+    """ Print available free devices
+    """
+    def print_available_free_devices(self, limit=0):
+        self.print_available_free_android_devices(limit)
+        self.print_available_free_ios_devices(limit)
+
 
     """ Create a project
     """
@@ -269,8 +306,8 @@ class Testdroid:
 
     """ Returns projects for user
     """
-    def get_projects(self):
-        return self.get("me/projects")
+    def get_projects(self, limit=0):
+        return self.get(path="me/projects", payload = {'limit': limit})
 
     """ Returns a single project
     """
@@ -279,11 +316,11 @@ class Testdroid:
 
     """ Print projects
     """
-    def print_projects(self):
+    def print_projects(self, limit=0):
         me = self.get_me()
         print "Projects for %s <%s>:" % (me['name'], me['email'])
         print
-        for project in self.get_projects()['data']:
+        for project in self.get_projects(limit)['data']:
             print "%s %s \"%s\"" % (str(project['id']).ljust(10), project['type'].ljust(15), project['name'])
 
     """ Upload application file to project
@@ -437,12 +474,12 @@ class Testdroid:
 
     """ Get all test runs for a project
     """
-    def get_project_test_runs(self, project_id, limit=20):
-        return self.get("me/projects/%s/runs?limit=%s" % (project_id, limit))
+    def get_project_test_runs(self, project_id, limit=0):
+        return self.get(path = "me/projects/%s/runs" % (project_id), payload = {'limit': limit})
 
     """ Print test runs of a project to console
     """
-    def print_project_test_runs(self, project_id, limit=20):
+    def print_project_test_runs(self, project_id, limit=0):
         test_runs = self.get_project_test_runs(project_id, limit)['data']
         for test_run in test_runs:
             print "%s %s  %s %s" % (str(test_run['id']).ljust(10), ts_format(test_run['createTime']), test_run['displayName'].ljust(30), test_run['state'])
@@ -454,43 +491,50 @@ class Testdroid:
 
     """ Return device runs for a project
     """
-    def get_device_runs(self, project_id, test_run_id, limit=1000):
-        return self.get("me/projects/%s/runs/%s/device-runs?limit=%s" % (project_id, test_run_id, limit))
+    def get_device_runs(self, project_id, test_run_id, limit=0):
+        return self.get(path = "me/projects/%s/runs/%s/device-runs" % (project_id, test_run_id), payload = {'limit': limit})
 
     """ Downloads screenshots list for a device run
     """
-    def get_device_run_screenshots_list(self, project_id, test_run_id, device_run_id):
-        return self.get("me/projects/%s/runs/%s/device-runs/%s/screenshots" % (project_id, test_run_id, device_run_id))
+    def get_device_run_screenshots_list(self, project_id, test_run_id, device_run_id, limit=0):
+        return self.get("me/projects/%s/runs/%s/device-runs/%s/screenshots" % (project_id, test_run_id, device_run_id), payload = {'limit': limit})
 
-    """ Downloads test run results to a directory hierarchy
+    """ Downloads test run files to a directory hierarchy
     """
     def download_test_run(self, project_id, test_run_id):
         test_run = self.get_test_run(project_id, test_run_id)
         device_runs = self.get_device_runs(project_id, test_run_id)
+
+        logger.info("")
         logger.info("Test run %s: \"%s\" has %s device runs:" % (test_run['id'], test_run['displayName'], len(device_runs['data'])))
-        for device_run in device_runs['data']:
-            logger.info("%s \"%s\" %s" % (device_run['id'], device_run['device']['displayName'], device_run['currentState']['status']))
-
-        logger.info("");
 
         for device_run in device_runs['data']:
-            if device_run['currentState']['status'] == "SUCCEEDED":
-                directory = "%s-%s/%d-%s" % (test_run['id'], test_run['displayName'], device_run['id'], device_run['device']['displayName'])
+            run_status = device_run['currentState']['status']
+            logger.info("")
+            logger.info("%s \"%s\" %s" % (device_run['id'], device_run['device']['displayName'], run_status))
 
-                filenames = ['junit.xml', 'logs', 'result-data.zip']
+            if run_status in ("SUCCEEDED", "FAILED"):
+                directory = "%s-%s/%d-%s" % (test_run_id, test_run['displayName'], device_run['id'], device_run['device']['displayName'])
+                session_id = device_run['deviceSessionId']
+                files = self.get("me/projects/%s/runs/%s/device-sessions/%s/output-file-set/files" % (project_id, test_run_id, session_id))
+                for file in files['data']:
+                    if file['state'] == "READY":
+                        full_path = "%s/%s" % (directory, file['name'])
+                        if not os.path.exists(directory):
+                            os.makedirs(directory)
 
-                for filename in filenames:
-                    full_path = "%s/%s" % (directory, filename)
-                    if not os.path.exists(directory):
-                        os.makedirs(directory)
-                    url = "me/projects/%s/runs/%d/device-runs/%d/%s" % (project_id, test_run['id'], device_run['id'], filename)
-
-                    prog = DownloadProgressBar()
-                    self.download(url, full_path, callback=lambda pos, total: prog.update(int(pos), int(total)))
-                    print
-
+                        url = "me/files/%s/file" % (file['id'])
+                        prog = DownloadProgressBar()
+                        self.download(url, full_path, callback=lambda pos, total: prog.update(int(pos), int(total)))
+                        print
+                    else:
+                        logger.info("File %s is not ready" % file['name'])
+                if( len(files['data']) == 0 ):
+                    logger.info("No files to download")
+                    logger.info("")
             else:
-                logger.info("Device %s has not finished - skipping" % device_run['device']['displayName'])
+                logger.info("Device run is not ended - Skipping file downloads")
+                logger.info("")
 
     """ Downloads test run screenshots
     """
@@ -547,6 +591,7 @@ class Testdroid:
 Commands:
 
     me                                          Get user details
+    available-free-devices                      Print list of currently available free devices
     device-groups                               Get list of your device groups
     create-project <name> <type>                Create a project
                                                 Type is one of:
@@ -580,9 +625,9 @@ Commands:
                                                 current directory in a structure:
                                                 [test-run-id]/[device-run-id]-[device-name]/files...
     download-test-screenshots <project-id> <test-run-id>
-                                                Download test run data. Data will be downloaded to
+                                                Download test run screenshots. Screenshots will be downloaded to
                                                 current directory in a structure:
-                                                [test-run-id]/[device-run-id]-[device-name]/files...
+                                                [test-run-id]/[device-run-id]-[device-name]/screenshots/...
 
 """
         parser = MyParser(usage=usage, description=description, epilog=epilog,  version="%s %s" % ("%prog", __version__))
@@ -602,6 +647,7 @@ Commands:
         commands = {
             "me": self.get_me,
             "device-groups": self.print_device_groups,
+            "available-free-devices": self.print_available_free_devices,
             "projects": self.print_projects,
             "create-project": self.create_project,
             "delete-project": self.delete_project,
