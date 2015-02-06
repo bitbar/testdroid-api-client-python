@@ -242,8 +242,8 @@ class Testdroid:
 
     """ Returns list of device groups
     """
-    def get_device_groups(self):
-        return self.get("me/device-groups")
+    def get_device_groups(self, limit=0):
+        return self.get("me/device-groups", payload = {'limit': limit})
 
     """ Returns list of devices
     """
@@ -252,18 +252,18 @@ class Testdroid:
 
     """ Print device groups
     """
-    def print_device_groups(self):
-        for device_group in self.get_device_groups()['data']:
+    def print_device_groups(self, limit=0):
+        for device_group in self.get_device_groups(limit)['data']:
             print "%s %s %s %s devices" % (str(device_group['id']).ljust(12), device_group['displayName'].ljust(30), device_group['osType'].ljust(10), device_group['deviceCount'])
 
     """ Print available free Android devices
     """
-    def print_available_free_android_devices(self):
+    def print_available_free_android_devices(self, limit=0):
         print ""
         print "Available Free Android Devices"
         print "------------------------------"
 
-        for device in self.get_devices()['data']:
+        for device in self.get_devices(limit)['data']:
             if device['creditsPrice'] == 0 and device['locked'] == False and device['osType'] == "ANDROID":
                     print device['displayName']
 
@@ -271,12 +271,12 @@ class Testdroid:
 
     """ Print available free iOS devices
     """
-    def print_available_free_ios_devices(self):
+    def print_available_free_ios_devices(self, limit=0):
         print ""
         print "Available Free iOS Devices"
         print "--------------------------"
 
-        for device in self.get_devices()['data']:
+        for device in self.get_devices(limit)['data']:
             if device['creditsPrice'] == 0 and device['locked'] == False and device['osType'] == "IOS":
                 print device['displayName']
 
@@ -284,9 +284,9 @@ class Testdroid:
 
     """ Print available free devices
     """
-    def print_available_free_devices(self):
-        self.print_available_free_android_devices()
-        self.print_available_free_ios_devices()
+    def print_available_free_devices(self, limit=0):
+        self.print_available_free_android_devices(limit)
+        self.print_available_free_ios_devices(limit)
 
 
     """ Create a project
@@ -306,8 +306,8 @@ class Testdroid:
 
     """ Returns projects for user
     """
-    def get_projects(self):
-        return self.get("me/projects")
+    def get_projects(self, limit=0):
+        return self.get(path="me/projects", payload = {'limit': limit})
 
     """ Returns a single project
     """
@@ -316,11 +316,11 @@ class Testdroid:
 
     """ Print projects
     """
-    def print_projects(self):
+    def print_projects(self, limit=0):
         me = self.get_me()
         print "Projects for %s <%s>:" % (me['name'], me['email'])
         print
-        for project in self.get_projects()['data']:
+        for project in self.get_projects(limit)['data']:
             print "%s %s \"%s\"" % (str(project['id']).ljust(10), project['type'].ljust(15), project['name'])
 
     """ Upload application file to project
@@ -474,12 +474,12 @@ class Testdroid:
 
     """ Get all test runs for a project
     """
-    def get_project_test_runs(self, project_id, limit=20):
+    def get_project_test_runs(self, project_id, limit=0):
         return self.get(path = "me/projects/%s/runs" % (project_id), payload = {'limit': limit})
 
     """ Print test runs of a project to console
     """
-    def print_project_test_runs(self, project_id, limit=20):
+    def print_project_test_runs(self, project_id, limit=0):
         test_runs = self.get_project_test_runs(project_id, limit)['data']
         for test_run in test_runs:
             print "%s %s  %s %s" % (str(test_run['id']).ljust(10), ts_format(test_run['createTime']), test_run['displayName'].ljust(30), test_run['state'])
