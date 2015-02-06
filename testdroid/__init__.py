@@ -7,7 +7,7 @@ from urlparse import urljoin
 from collections import namedtuple
 from datetime import datetime
 
-__version__ = '0.1.9.dev'
+__version__ = '0.1.9'
 try:
     logging.basicConfig(format=FORMAT)
 except Exception, e:
