@@ -1,9 +1,14 @@
+2.5.0
+* Version numbering changed to match Testdroid API versions
+* Fix run status reading problem when using against Testdroid 2.5 or newer version. For older Testdroid versions use older version of this tool.
+
 0.1.9
 * Fix Logger problem, caused by missing FORMAT definition
 * Add feature 'Print available free devices'
 * Set unlimited device run & screenshot downloads
 * Correct help text for screenshots download
 * Refactor test run download feature to download all files available for the test run
+* Do not limit number of results
 
 0.1.8
 * Fix file download for Linux and Mac machines.
