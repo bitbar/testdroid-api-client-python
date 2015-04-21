@@ -1,4 +1,5 @@
-0.1.10
+2.5.0
+* Version numbering changed to match Testdroid API versions
 * Fix run status reading problem when using against Testdroid 2.5 or newer version. For older Testdroid versions use older version of this tool.
 
 0.1.9
