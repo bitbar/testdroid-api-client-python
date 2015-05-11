@@ -394,8 +394,12 @@ class Testdroid:
             if not 'id' in device_group:
                 print "Device group %s not found" % device_group_id
                 sys.exit(1)
-            # Update device group
 
+            if int(device_group['deviceCount']) == 0:
+                print "ERROR: No devices at device group %s" % device_group['id']
+                sys.exit(1)
+
+            # Update device group
             reply = self.set_project_config(project_id=project_id, payload={'usedDeviceGroupId': device_group_id})
             if int(reply['usedDeviceGroupId']) != int(device_group_id):
                 print "Unable to set used device group to %s for project %s" % (device_group_id, project_id)
