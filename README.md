@@ -4,7 +4,7 @@ Python client for Testdroid Cloud APIv2
 Dependencies
 -----
 
-For Linux installatin you need Python dev package.
+For Linux installation you need Python dev package.
 
 Ubuntu
 `sudo apt-get install python-dev`
