@@ -15,6 +15,25 @@ logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('testdroid')
 logger.setLevel(logging.INFO)
 
+
+class RequestTimeout(Exception):
+
+    def __init__(self, msg):
+        super(Exception, self).__init__(msg)
+
+class ConnectionError(Exception):
+
+    def __init__(self, msg):
+        super(Exception, self).__init__(msg)
+
+class RequestResponseError(Exception):
+
+    def __init__(self, msg, status_code):
+        super(Exception, self).__init__("Request Error: code %s: %s" % 
+                                         (status_code, msg) )
+        self.status_code = status_code
+    
+
 """ Format unix timestamp to human readable. Automatically detects timestamps with seconds or milliseconds.
 """
 def ts_format(timestamp):
@@ -123,9 +142,8 @@ class Testdroid:
                 data = payload,
                 headers = { "Accept": "application/json" }
                 )
-            if res.status_code != 200:
-                print "FAILED: Authentication or connection failure. Check Testdroid Cloud URL and your credentials."
-                sys.exit(-1)
+            if res.status_code not in range(200, 300):
+                raise RequestResponseError(res.text, res.status_code)
 
             reply = res.json()
 
@@ -144,7 +162,7 @@ class Testdroid:
                 data = payload,
                 headers = { "Accept": "application/json" }
                 )
-            if res.status_code != 200:
+            if res.status_code not in range(200, 300):
                 print "FAILED: Unable to get a new access token using refresh token"
                 self.access_token = None
                 return self.get_token()
@@ -169,7 +187,7 @@ class Testdroid:
         try:
             res = requests.get(url, params=payload, headers=self._build_headers(), stream=True, timeout=(60.0))
 
-            if res.status_code == 200:
+            if res.status_code in range(200, 300):
                 logger.info("Downloading %s (%s bytes)" % (filename, res.headers["Content-Length"]))
                 pos = 0
                 total = res.headers['content-length']
@@ -188,20 +206,27 @@ class Testdroid:
                         time.sleep(0.1)
                 os.close(fd)
             else:
-                logger.info("Resource not found: %s", path)
+                raise RequestResponseError(res.text, res.status_code)
 
             res.close()
-        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        except requests.exceptions.Timeout:
             logger.info("")
             logger.info("Download has failed. Please try to restart your download")
-            sys.exit()
+            raise RequestTimeout("Download has failed. Please try to restart your download")
+        except requests.exceptions.ConnectionError:
+            logger.info("")
+            logger.info("Download has failed. Please try to restart your download")
+            raise ConnectionError("Download has failed. Please try to restart your download")
+
 
     """ Upload file to API resource
     """
     def upload(self, path=None, filename=None):
         url = "%s/api/v2/%s" % (self.cloud_url, path)
         files = {'file': open(filename, 'rb')}
-        requests.post(url, files=files, headers=self._build_headers())
+        res = requests.post(url, files=files, headers=self._build_headers())
+        if res.status_code not in range(200, 300):
+            raise RequestResponseError(res.text, res.status_code)
 
     """ GET from API resource
     """
@@ -213,6 +238,8 @@ class Testdroid:
         url = "%s/api/v2/%s" % (self.cloud_url, path)
         headers = dict(self._build_headers().items() + headers.items())
         res =  requests.get(url, params=payload, headers=headers)
+        if res.status_code not in range(200, 300):
+            raise RequestResponseError(res.text, res.status_code)
         logger.debug(res.text)
         if headers['Accept'] == 'application/json':
             return res.json()
@@ -224,14 +251,20 @@ class Testdroid:
     def post(self, path=None, payload=None, headers={}):
         headers = dict(self._build_headers().items() + headers.items())
         url = "%s/api/v2/%s?access_token=%s" % (self.cloud_url, path, self.get_token())
-        return requests.post(url, payload, headers=headers).json()
+        res = requests.post(url, payload, headers=headers)
+        if res.status_code not in range(200, 300):
+            raise RequestResponseError(res.text, res.status_code)
+        return res.json()
 
     """ DELETE API resource
     """
     def delete(self, path=None, payload=None, headers={}):
         headers = dict(self._build_headers().items() + headers.items())
         url = "%s/api/v2/%s?access_token=%s" % (self.cloud_url, path, self.get_token())
-        return requests.delete(url, headers=headers)
+        res = requests.delete(url, headers=headers)
+        if res.status_code not in range(200, 300):
+            raise RequestResponseError(res.text, res.status_code)
+        return res
 
     """ Returns user details
     """
