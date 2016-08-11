@@ -1,3 +1,6 @@
+2.5.2
+ * Replace sys.exit with exceptions;  better error response handling
+
 2.5.1
  * Fix to handle device group without devices
 
