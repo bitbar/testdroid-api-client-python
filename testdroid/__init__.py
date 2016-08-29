@@ -548,7 +548,7 @@ class Testdroid:
             logger.info("")
             logger.info("%s \"%s\" %s" % (device_run['id'], device_run['device']['displayName'], run_status))
 
-            if run_status in ("SUCCEEDED", "FAILED"):
+            if run_status in ("SUCCEEDED", "FAILED", "EXCLUDED"):
                 directory = "%s-%s/%d-%s" % (test_run_id, test_run['displayName'], device_run['id'], device_run['device']['displayName'])
                 session_id = device_run['deviceSessionId']
                 files = self.get("me/projects/%s/runs/%s/device-sessions/%s/output-file-set/files" % (project_id, test_run_id, session_id))
