@@ -1,3 +1,6 @@
+2.5.3
+ * Added EXCLUDED as possible test run status, otherwise will may not 
+   recognize run is finished
 2.5.2
  * Replace sys.exit with exceptions;  better error response handling
 
