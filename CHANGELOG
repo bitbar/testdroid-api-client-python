@@ -1,5 +1,15 @@
-2.11.0
+2.25.0
 * Add API Key authentication option
+* Version Number to match Testdroid Cloud Version
+
+2.5.3
+ * Added EXCLUDED as possible test run status, otherwise will may not 
+   recognize run is finished
+2.5.2
+ * Replace sys.exit with exceptions;  better error response handling
+
+2.5.1
+ * Fix to handle device group without devices
 
 2.5.0
 * Version numbering changed to match Testdroid API versions
