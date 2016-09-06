@@ -172,10 +172,10 @@ class Testdroid:
     """ Helper method for getting necessary headers to use for API calls, including authentication
     """
     def _build_headers(self):
-        if not self.api_key:
-            return { 'Authorization': 'Bearer %s' % self.get_token(), 'Accept': 'application/json' }
-        else:
+        if self.api_key:
             return {'Authorization' : 'Basic %s' % base64.b64encode(self.api_key+":"), 'Accept' : 'application/json' }
+        else:
+            return { 'Authorization': 'Bearer %s' % self.get_token(), 'Accept': 'application/json' }
 
     """ Download file from API resource
     """
