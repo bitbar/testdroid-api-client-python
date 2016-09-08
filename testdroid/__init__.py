@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import os, sys, requests, json, logging, time, httplib
+import os, sys, requests, json, logging, time, httplib, base64
 from PIL import Image
 from optparse import OptionParser
 from urlparse import urljoin
@@ -89,6 +89,8 @@ class DownloadProgressBar:
 class Testdroid:
     # Cloud URL (not including API path)
     url = None
+    # Api Key for authentication
+    api_key = None
     # Oauth access token
     access_token = None
     # Oauth refresh token
@@ -112,6 +114,16 @@ class Testdroid:
         self.password = password
         self.cloud_url = url
         self.download_buffer_size = download_buffer_size
+
+    """ Full constructor with api key
+    """
+    def __init__(self, apikey=None, url="https://cloud.testdroid.com", download_buffer_size=65536):
+        self.api_key = apikey
+        self.cloud_url = url
+        self.download_buffer_size = download_buffer_size
+
+    def set_apikey(self, apikey):
+        self.api_key = apikey
 
     def set_username(self, username):
         self.username = username
@@ -178,7 +190,10 @@ class Testdroid:
     """ Helper method for getting necessary headers to use for API calls, including authentication
     """
     def _build_headers(self):
-        return { "Authorization": "Bearer %s" % self.get_token(), "Accept": "application/json" }
+        if self.api_key:
+            return {'Authorization' : 'Basic %s' % base64.b64encode(self.api_key+":"), 'Accept' : 'application/json' }
+        else:
+            return { 'Authorization': 'Bearer %s' % self.get_token(), 'Accept': 'application/json' }
 
     """ Download file from API resource
     """
@@ -666,10 +681,12 @@ Commands:
 
 """
         parser = MyParser(usage=usage, description=description, epilog=epilog,  version="%s %s" % ("%prog", __version__))
+        parser.add_option("-k", "--apikey", dest="apikey",
+                          help="API key - the API key for Testdroid Cloud. Optional. You can use environment variable TESTDROID_APIKEY as well.")
         parser.add_option("-u", "--username", dest="username",
-                          help="Username - the email address. Required. You can use environment variable TESTDROID_USERNAME as well.")
+                          help="Username - the email address. Optional. You can use environment variable TESTDROID_USERNAME as well.")
         parser.add_option("-p", "--password", dest="password",
-                          help="Password. Required. You can use environment variable TESTDROID_PASSWORD as well.")
+                          help="Password. Required if username is used. You can use environment variable TESTDROID_PASSWORD as well.")
         parser.add_option("-c", "--url", dest="url", default="https://cloud.testdroid.com",
                           help="Cloud endpoint. Default is https://cloud.testdroid.com. You can use environment variable TESTDROID_URL as well.")
         parser.add_option("-q", "--quiet", action="store_true", dest="quiet",
@@ -721,10 +738,12 @@ Commands:
 
         username = options.username or os.environ.get('TESTDROID_USERNAME')
         password = options.password or os.environ.get('TESTDROID_PASSWORD')
+        apikey = options.apikey or os.environ.get('TESTDROID_APIKEY')
         url = os.environ.get('TESTDROID_URL') or options.url
 
         self.set_username(username)
         self.set_password(password)
+        self.set_apikey(apikey)
         self.set_url(url)
 
         command = commands[args[0]]
