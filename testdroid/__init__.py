@@ -7,7 +7,7 @@ from urlparse import urljoin
 from collections import namedtuple
 from datetime import datetime
 
-__version__ = '2.6.0'
+__version__ = '2.6.1'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
