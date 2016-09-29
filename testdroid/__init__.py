@@ -1,19 +1,38 @@
 # -*- coding: utf-8 -*-
 
-import os, sys, requests, json, logging, time, httplib
+import os, sys, requests, json, logging, time, httplib, base64
 from PIL import Image
 from optparse import OptionParser
 from urlparse import urljoin
 from collections import namedtuple
 from datetime import datetime
 
-__version__ = '2.5.1'
+__version__ = '2.6.0'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
 
 logger = logging.getLogger('testdroid')
 logger.setLevel(logging.INFO)
+
+
+class RequestTimeout(Exception):
+
+    def __init__(self, msg):
+        super(Exception, self).__init__(msg)
+
+class ConnectionError(Exception):
+
+    def __init__(self, msg):
+        super(Exception, self).__init__(msg)
+
+class RequestResponseError(Exception):
+
+    def __init__(self, msg, status_code):
+        super(Exception, self).__init__("Request Error: code %s: %s" % 
+                                         (status_code, msg) )
+        self.status_code = status_code
+    
 
 """ Format unix timestamp to human readable. Automatically detects timestamps with seconds or milliseconds.
 """
@@ -70,6 +89,8 @@ class DownloadProgressBar:
 class Testdroid:
     # Cloud URL (not including API path)
     url = None
+    # Api Key for authentication
+    api_key = None
     # Oauth access token
     access_token = None
     # Oauth refresh token
@@ -93,6 +114,16 @@ class Testdroid:
         self.password = password
         self.cloud_url = url
         self.download_buffer_size = download_buffer_size
+
+    """ Full constructor with api key
+    """
+    def __init__(self, apikey=None, url="https://cloud.testdroid.com", download_buffer_size=65536):
+        self.api_key = apikey
+        self.cloud_url = url
+        self.download_buffer_size = download_buffer_size
+
+    def set_apikey(self, apikey):
+        self.api_key = apikey
 
     def set_username(self, username):
         self.username = username
@@ -123,9 +154,8 @@ class Testdroid:
                 data = payload,
                 headers = { "Accept": "application/json" }
                 )
-            if res.status_code != 200:
-                print "FAILED: Authentication or connection failure. Check Testdroid Cloud URL and your credentials."
-                sys.exit(-1)
+            if res.status_code not in range(200, 300):
+                raise RequestResponseError(res.text, res.status_code)
 
             reply = res.json()
 
@@ -144,7 +174,7 @@ class Testdroid:
                 data = payload,
                 headers = { "Accept": "application/json" }
                 )
-            if res.status_code != 200:
+            if res.status_code not in range(200, 300):
                 print "FAILED: Unable to get a new access token using refresh token"
                 self.access_token = None
                 return self.get_token()
@@ -160,7 +190,10 @@ class Testdroid:
     """ Helper method for getting necessary headers to use for API calls, including authentication
     """
     def _build_headers(self):
-        return { "Authorization": "Bearer %s" % self.get_token(), "Accept": "application/json" }
+        if self.api_key:
+            return {'Authorization' : 'Basic %s' % base64.b64encode(self.api_key+":"), 'Accept' : 'application/json' }
+        else:
+            return { 'Authorization': 'Bearer %s' % self.get_token(), 'Accept': 'application/json' }
 
     """ Download file from API resource
     """
@@ -169,7 +202,7 @@ class Testdroid:
         try:
             res = requests.get(url, params=payload, headers=self._build_headers(), stream=True, timeout=(60.0))
 
-            if res.status_code == 200:
+            if res.status_code in range(200, 300):
                 logger.info("Downloading %s (%s bytes)" % (filename, res.headers["Content-Length"]))
                 pos = 0
                 total = res.headers['content-length']
@@ -188,20 +221,27 @@ class Testdroid:
                         time.sleep(0.1)
                 os.close(fd)
             else:
-                logger.info("Resource not found: %s", path)
+                raise RequestResponseError(res.text, res.status_code)
 
             res.close()
-        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        except requests.exceptions.Timeout:
             logger.info("")
             logger.info("Download has failed. Please try to restart your download")
-            sys.exit()
+            raise RequestTimeout("Download has failed. Please try to restart your download")
+        except requests.exceptions.ConnectionError:
+            logger.info("")
+            logger.info("Download has failed. Please try to restart your download")
+            raise ConnectionError("Download has failed. Please try to restart your download")
+
 
     """ Upload file to API resource
     """
     def upload(self, path=None, filename=None):
         url = "%s/api/v2/%s" % (self.cloud_url, path)
         files = {'file': open(filename, 'rb')}
-        requests.post(url, files=files, headers=self._build_headers())
+        res = requests.post(url, files=files, headers=self._build_headers())
+        if res.status_code not in range(200, 300):
+            raise RequestResponseError(res.text, res.status_code)
 
     """ GET from API resource
     """
@@ -213,6 +253,8 @@ class Testdroid:
         url = "%s/api/v2/%s" % (self.cloud_url, path)
         headers = dict(self._build_headers().items() + headers.items())
         res =  requests.get(url, params=payload, headers=headers)
+        if res.status_code not in range(200, 300):
+            raise RequestResponseError(res.text, res.status_code)
         logger.debug(res.text)
         if headers['Accept'] == 'application/json':
             return res.json()
@@ -224,14 +266,20 @@ class Testdroid:
     def post(self, path=None, payload=None, headers={}):
         headers = dict(self._build_headers().items() + headers.items())
         url = "%s/api/v2/%s?access_token=%s" % (self.cloud_url, path, self.get_token())
-        return requests.post(url, payload, headers=headers).json()
+        res = requests.post(url, payload, headers=headers)
+        if res.status_code not in range(200, 300):
+            raise RequestResponseError(res.text, res.status_code)
+        return res.json()
 
     """ DELETE API resource
     """
     def delete(self, path=None, payload=None, headers={}):
         headers = dict(self._build_headers().items() + headers.items())
         url = "%s/api/v2/%s?access_token=%s" % (self.cloud_url, path, self.get_token())
-        return requests.delete(url, headers=headers)
+        res = requests.delete(url, headers=headers)
+        if res.status_code not in range(200, 300):
+            raise RequestResponseError(res.text, res.status_code)
+        return res
 
     """ Returns user details
     """
@@ -515,7 +563,7 @@ class Testdroid:
             logger.info("")
             logger.info("%s \"%s\" %s" % (device_run['id'], device_run['device']['displayName'], run_status))
 
-            if run_status in ("SUCCEEDED", "FAILED"):
+            if run_status in ("SUCCEEDED", "FAILED", "EXCLUDED"):
                 directory = "%s-%s/%d-%s" % (test_run_id, test_run['displayName'], device_run['id'], device_run['device']['displayName'])
                 session_id = device_run['deviceSessionId']
                 files = self.get("me/projects/%s/runs/%s/device-sessions/%s/output-file-set/files" % (project_id, test_run_id, session_id))
@@ -633,10 +681,12 @@ Commands:
 
 """
         parser = MyParser(usage=usage, description=description, epilog=epilog,  version="%s %s" % ("%prog", __version__))
+        parser.add_option("-k", "--apikey", dest="apikey",
+                          help="API key - the API key for Testdroid Cloud. Optional. You can use environment variable TESTDROID_APIKEY as well.")
         parser.add_option("-u", "--username", dest="username",
-                          help="Username - the email address. Required. You can use environment variable TESTDROID_USERNAME as well.")
+                          help="Username - the email address. Optional. You can use environment variable TESTDROID_USERNAME as well.")
         parser.add_option("-p", "--password", dest="password",
-                          help="Password. Required. You can use environment variable TESTDROID_PASSWORD as well.")
+                          help="Password. Required if username is used. You can use environment variable TESTDROID_PASSWORD as well.")
         parser.add_option("-c", "--url", dest="url", default="https://cloud.testdroid.com",
                           help="Cloud endpoint. Default is https://cloud.testdroid.com. You can use environment variable TESTDROID_URL as well.")
         parser.add_option("-q", "--quiet", action="store_true", dest="quiet",
@@ -688,10 +738,12 @@ Commands:
 
         username = options.username or os.environ.get('TESTDROID_USERNAME')
         password = options.password or os.environ.get('TESTDROID_PASSWORD')
+        apikey = options.apikey or os.environ.get('TESTDROID_APIKEY')
         url = os.environ.get('TESTDROID_URL') or options.url
 
         self.set_username(username)
         self.set_password(password)
+        self.set_apikey(apikey)
         self.set_url(url)
 
         command = commands[args[0]]

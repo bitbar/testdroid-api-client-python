@@ -2,7 +2,8 @@
 from setuptools import setup, find_packages
 import sys, os
 
-version = '2.5.1'
+
+version = '2.6.0'
 
 setup(name='testdroid',
       version=version,
