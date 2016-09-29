@@ -7,7 +7,7 @@ from urlparse import urljoin
 from collections import namedtuple
 from datetime import datetime
 
-__version__ = '2.6.0'
+__version__ = '2.6.1'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
@@ -423,11 +423,19 @@ class Testdroid:
         path = "/users/%s/projects/%s/config" % ( me['id'], project_id )
         return self.post(path=path, payload=payload)
 
+    """Set project framework based on a framework integer id
+    """
+    def set_project_framework(self, project_id, frameworkId):
+        path = "projects/%(project_id)s/frameworks" % {
+            'project_id': project_id
+        }
+        self.post(path, payload={"frameworkId": frameworkId})
+
     """ Start a test run on a device group
     """
-    def start_test_run(self, project_id, device_group_id=None, device_model_ids=None):
+    def start_test_run(self, project_id, device_group_id=None, device_model_ids=None, name=None):
         me = self.get_me()
-        payload={}
+        payload={} if name is None else {'name':name}
         project = self.get_project(project_id)
         if not 'id' in project:
             print "Project %s not found" % project_id
