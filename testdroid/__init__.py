@@ -263,7 +263,7 @@ class Testdroid:
     """
     def post(self, path=None, payload=None, headers={}):
         headers = dict(self._build_headers().items() + headers.items())
-        url = "%s/api/v2/%s?access_token=%s" % (self.cloud_url, path, self.get_token())
+        url = "%s/api/v2/%s" % (self.cloud_url, path)
         res = requests.post(url, payload, headers=headers)
         if res.status_code not in range(200, 300):
             raise RequestResponseError(res.text, res.status_code)
@@ -273,7 +273,7 @@ class Testdroid:
     """
     def delete(self, path=None, payload=None, headers={}):
         headers = dict(self._build_headers().items() + headers.items())
-        url = "%s/api/v2/%s?access_token=%s" % (self.cloud_url, path, self.get_token())
+        url = "%s/api/v2/%s" % (self.cloud_url, path)
         res = requests.delete(url, headers=headers)
         if res.status_code not in range(200, 300):
             raise RequestResponseError(res.text, res.status_code)
