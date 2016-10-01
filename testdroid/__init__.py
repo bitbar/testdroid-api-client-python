@@ -3,8 +3,6 @@
 import os, sys, requests, json, logging, time, httplib, base64
 from PIL import Image
 from optparse import OptionParser
-from urlparse import urljoin
-from collections import namedtuple
 from datetime import datetime
 
 __version__ = '2.6.1'
@@ -265,7 +263,7 @@ class Testdroid:
     """
     def post(self, path=None, payload=None, headers={}):
         headers = dict(self._build_headers().items() + headers.items())
-        url = "%s/api/v2/%s?access_token=%s" % (self.cloud_url, path, self.get_token())
+        url = "%s/api/v2/%s" % (self.cloud_url, path)
         res = requests.post(url, payload, headers=headers)
         if res.status_code not in range(200, 300):
             raise RequestResponseError(res.text, res.status_code)
@@ -275,7 +273,7 @@ class Testdroid:
     """
     def delete(self, path=None, payload=None, headers={}):
         headers = dict(self._build_headers().items() + headers.items())
-        url = "%s/api/v2/%s?access_token=%s" % (self.cloud_url, path, self.get_token())
+        url = "%s/api/v2/%s" % (self.cloud_url, path)
         res = requests.delete(url, headers=headers)
         if res.status_code not in range(200, 300):
             raise RequestResponseError(res.text, res.status_code)
@@ -388,7 +386,7 @@ class Testdroid:
     def delete_project_parameters(self, project_id, parameter_id):
         me = self.get_me()
         path = "/users/%s/projects/%s/config/parameters/%s" % ( me['id'], project_id, parameter_id )
-        reply = self.delete(path=path)
+        return self.delete(path=path)
 
     """ Get project parameters
     """
@@ -409,7 +407,7 @@ class Testdroid:
         #set key value pair for project. e.g. : {'key' : 'my_key', 'value':'my_value'}
         me = self.get_me()
         path = "/users/%s/projects/%s/config/parameters" % ( me['id'], project_id )
-        reply = self.post(path=path, payload=parameters)
+        return self.post(path=path, payload=parameters)
 
 
     """ Set project config according to http://docs.testdroid.com/_pages/client.html#project-config
