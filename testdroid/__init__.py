@@ -409,6 +409,11 @@ class Testdroid:
         path = "/users/%s/projects/%s/config/parameters" % ( me['id'], project_id )
         return self.post(path=path, payload=parameters)
 
+    """ Get project config
+    """
+    def get_project_config(self, project_id):
+        path = "/me/projects/%s/config" % ( project_id )
+        return self.get(path=path)
 
     """ Set project config according to http://docs.testdroid.com/_pages/client.html#project-config
     """
