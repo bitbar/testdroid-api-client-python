@@ -5,7 +5,7 @@ from PIL import Image
 from optparse import OptionParser
 from datetime import datetime
 
-__version__ = '2.6.1'
+__version__ = '2.6.2'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
@@ -100,25 +100,14 @@ class Testdroid:
     # polling interval when awaiting for test run completion
     polling_interval_mins = 10
 
-    """ Simple constructor, defaults against cloud.testdroid.com
+    """ Constructor, defaults against cloud.testdroid.com
     """
-    def __init__(self):
-        self.cloud_url="https://cloud.testdroid.com"
-
-    """ Full constructor with username and password
-    """
-    def __init__(self, username=None, password=None, url="https://cloud.testdroid.com", download_buffer_size=65536):
-        self.username = username
-        self.password = password
-        self.cloud_url = url
-        self.download_buffer_size = download_buffer_size
-
-    """ Full constructor with api key
-    """
-    def __init__(self, apikey=None, url="https://cloud.testdroid.com", download_buffer_size=65536):
-        self.api_key = apikey
-        self.cloud_url = url
-        self.download_buffer_size = download_buffer_size
+    def __init__(self, **kwargs):
+        self.api_key = kwargs.get('apikey')
+        self.username = kwargs.get('username')
+        self.password = kwargs.get('password')
+        self.cloud_url = kwargs.get('url') or "https://cloud.testdroid.com"
+        self.download_buffer_size = kwargs.get('download_buffer_size') or 65536
 
     def set_apikey(self, apikey):
         self.api_key = apikey
@@ -409,6 +398,11 @@ class Testdroid:
         path = "/users/%s/projects/%s/config/parameters" % ( me['id'], project_id )
         return self.post(path=path, payload=parameters)
 
+    """ Get project config
+    """
+    def get_project_config(self, project_id):
+        path = "/me/projects/%s/config" % ( project_id )
+        return self.get(path=path)
 
     """ Set project config according to http://docs.testdroid.com/_pages/client.html#project-config
     """
