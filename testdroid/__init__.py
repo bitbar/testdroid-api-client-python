@@ -7,7 +7,7 @@ from urlparse import urljoin
 from collections import namedtuple
 from datetime import datetime
 
-__version__ = '2.6.0'
+__version__ = '2.6.1'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
@@ -114,6 +114,7 @@ class Testdroid:
         self.password = password
         self.cloud_url = url
         self.download_buffer_size = download_buffer_size
+        self.api_key = None
 
     """ Full constructor with api key
     """
@@ -265,7 +266,10 @@ class Testdroid:
     """
     def post(self, path=None, payload=None, headers={}):
         headers = dict(self._build_headers().items() + headers.items())
-        url = "%s/api/v2/%s?access_token=%s" % (self.cloud_url, path, self.get_token())
+        if self.api_key is not None:
+            url = "%s/api/v2/%s" % (self.cloud_url, path)
+        else:
+            url = "%s/api/v2/%s?access_token=%s" % (self.cloud_url, path, self.get_token())
         res = requests.post(url, payload, headers=headers)
         if res.status_code not in range(200, 300):
             raise RequestResponseError(res.text, res.status_code)
