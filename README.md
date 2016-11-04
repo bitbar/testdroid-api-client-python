@@ -71,3 +71,11 @@ Troubleshooting
 
 If you see Pillow error messages on Linux you are most likely missing python-dev, see dependencies.
 
+Contributing
+------------
+
+1. **Fork** the repository and clone it locally. 
+2. **Create a branch** from Bitbar devel branch for your edits.
+3. **Commit and push** to your own branch in Github
+4. **Open pull request** for your changes for Bitbar devel branch. 
+
