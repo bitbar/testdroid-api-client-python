@@ -721,6 +721,7 @@ Commands:
             "test-run": self.get_test_run,
             "test-runs": self.print_project_test_runs,
             "device-runs": self.get_device_runs,
+            "device-run-files": self.get_device_run_files,
             "download-test-run": self.download_test_run,
             "download-test-screenshots": self.download_test_screenshots
         }
