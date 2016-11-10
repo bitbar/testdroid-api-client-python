@@ -574,7 +574,7 @@ class Testdroid:
             if run_status in ("SUCCEEDED", "FAILED", "EXCLUDED"):
                 directory = "%s-%s/%d-%s" % (test_run_id, test_run['displayName'], device_run['id'], device_run['device']['displayName'])
                 session_id = device_run['deviceSessionId']
-                files = get_device_run_files(project_id, test_run_id, session_id)
+                files = self.get_device_run_files(project_id, test_run_id, session_id)
                 for file in files['data']:
                     if file['state'] == "READY":
                         full_path = "%s/%s" % (directory, file['name'])
