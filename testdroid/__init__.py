@@ -5,7 +5,7 @@ from PIL import Image
 from optparse import OptionParser
 from datetime import datetime
 
-__version__ = '2.6.2'
+__version__ = '2.6.3'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
@@ -549,6 +549,14 @@ class Testdroid:
     def get_device_run_screenshots_list(self, project_id, test_run_id, device_run_id, limit=0):
         return self.get("me/projects/%s/runs/%s/device-runs/%s/screenshots" % (project_id, test_run_id, device_run_id), payload = {'limit': limit})
 
+    """ Get list of files for device run
+    """
+    def get_device_run_files(self, project_id, test_run_id, device_session_id, tags=None):
+        if tags is None:
+            return self.get("me/projects/%s/runs/%s/device-sessions/%s/output-file-set/files" % (project_id, test_run_id, device_session_id))
+        else:
+            return self.get("me/projects/%s/runs/%s/device-sessions/%s/output-file-set/files?tag[]=%s" % (project_id, test_run_id, device_session_id, tags))
+
     """ Downloads test run files to a directory hierarchy
     """
     def download_test_run(self, project_id, test_run_id):
@@ -566,7 +574,7 @@ class Testdroid:
             if run_status in ("SUCCEEDED", "FAILED", "EXCLUDED"):
                 directory = "%s-%s/%d-%s" % (test_run_id, test_run['displayName'], device_run['id'], device_run['device']['displayName'])
                 session_id = device_run['deviceSessionId']
-                files = self.get("me/projects/%s/runs/%s/device-sessions/%s/output-file-set/files" % (project_id, test_run_id, session_id))
+                files = self.get_device_run_files(project_id, test_run_id, session_id)
                 for file in files['data']:
                     if file['state'] == "READY":
                         full_path = "%s/%s" % (directory, file['name'])
@@ -713,6 +721,7 @@ Commands:
             "test-run": self.get_test_run,
             "test-runs": self.print_project_test_runs,
             "device-runs": self.get_device_runs,
+            "device-run-files": self.get_device_run_files,
             "download-test-run": self.download_test_run,
             "download-test-screenshots": self.download_test_screenshots
         }
