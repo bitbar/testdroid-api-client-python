@@ -329,6 +329,7 @@ class Testdroid:
         print project
 
         logger.info("Project %s: %s (%s) created" % (project['id'], project['name'], project['type'] ))
+        return project
 
     """ Delete a project
     """
