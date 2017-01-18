@@ -381,7 +381,7 @@ class Testdroid:
     """ Get project parameters
     """
     def get_project_parameters(self, project_id):
-        path = "/me/projects/%s/config/parameters" % ( project_id )
+        path = "me/projects/%s/config/parameters" % ( project_id )
         return self.get(path=path)
 
     """ Upload additional data file to project
