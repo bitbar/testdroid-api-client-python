@@ -402,7 +402,7 @@ class Testdroid:
     """ Get project config
     """
     def get_project_config(self, project_id):
-        path = "/me/projects/%s/config" % ( project_id )
+        path = "me/projects/%s/config" % ( project_id )
         return self.get(path=path)
 
     """ Set project config according to http://docs.testdroid.com/_pages/client.html#project-config
@@ -439,7 +439,7 @@ class Testdroid:
             sys.exit(1)
 
         if device_group_id is not None:
-            device_group = self.get("/users/%s/device-groups/%s" % (me['id'], device_group_id))
+            device_group = self.get("users/%s/device-groups/%s" % (me['id'], device_group_id))
             if not 'id' in device_group:
                 print "Device group %s not found" % device_group_id
                 sys.exit(1)
