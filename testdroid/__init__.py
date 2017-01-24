@@ -5,7 +5,7 @@ from PIL import Image
 from optparse import OptionParser
 from datetime import datetime
 
-__version__ = '2.6.3'
+__version__ = '2.6.4'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
@@ -381,7 +381,7 @@ class Testdroid:
     """ Get project parameters
     """
     def get_project_parameters(self, project_id):
-        path = "/me/projects/%s/config/parameters" % ( project_id )
+        path = "me/projects/%s/config/parameters" % ( project_id )
         return self.get(path=path)
 
     """ Upload additional data file to project
@@ -402,7 +402,7 @@ class Testdroid:
     """ Get project config
     """
     def get_project_config(self, project_id):
-        path = "/me/projects/%s/config" % ( project_id )
+        path = "me/projects/%s/config" % ( project_id )
         return self.get(path=path)
 
     """ Set project config according to http://docs.testdroid.com/_pages/client.html#project-config
@@ -439,7 +439,7 @@ class Testdroid:
             sys.exit(1)
 
         if device_group_id is not None:
-            device_group = self.get("/users/%s/device-groups/%s" % (me['id'], device_group_id))
+            device_group = self.get("users/%s/device-groups/%s" % (me['id'], device_group_id))
             if not 'id' in device_group:
                 print "Device group %s not found" % device_group_id
                 sys.exit(1)
