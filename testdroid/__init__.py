@@ -5,7 +5,7 @@ from PIL import Image
 from optparse import OptionParser
 from datetime import datetime
 
-__version__ = '2.6.4'
+__version__ = '2.39'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
@@ -568,13 +568,13 @@ class Testdroid:
         logger.info("Test run %s: \"%s\" has %s device runs:" % (test_run['id'], test_run['displayName'], len(device_runs['data'])))
 
         for device_run in device_runs['data']:
-            run_status = device_run['runStatus']
+            state = device_run['state']
             logger.info("")
-            logger.info("%s \"%s\" %s" % (device_run['id'], device_run['device']['displayName'], run_status))
+            logger.info("%s \"%s\" %s" % (device_run['id'], device_run['device']['displayName'], state))
 
-            if run_status in ("SUCCEEDED", "FAILED", "EXCLUDED"):
+            if state in ("ABORTED", "TIMEOUT", "WARNING", "SUCCEEDED", "FAILED", "EXCLUDED"):
                 directory = "%s-%s/%d-%s" % (test_run_id, test_run['displayName'], device_run['id'], device_run['device']['displayName'])
-                session_id = device_run['deviceSessionId']
+                session_id = device_run['id']
                 files = self.get_device_run_files(project_id, test_run_id, session_id)
                 for file in files['data']:
                     if file['state'] == "READY":
