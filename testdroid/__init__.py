@@ -5,7 +5,7 @@ from PIL import Image
 from optparse import OptionParser
 from datetime import datetime
 
-__version__ = '2.6.2'
+__version__ = '2.39'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
@@ -329,6 +329,7 @@ class Testdroid:
         print project
 
         logger.info("Project %s: %s (%s) created" % (project['id'], project['name'], project['type'] ))
+        return project
 
     """ Delete a project
     """
@@ -380,7 +381,7 @@ class Testdroid:
     """ Get project parameters
     """
     def get_project_parameters(self, project_id):
-        path = "/me/projects/%s/config/parameters" % ( project_id )
+        path = "me/projects/%s/config/parameters" % ( project_id )
         return self.get(path=path)
 
     """ Upload additional data file to project
@@ -401,7 +402,7 @@ class Testdroid:
     """ Get project config
     """
     def get_project_config(self, project_id):
-        path = "/me/projects/%s/config" % ( project_id )
+        path = "me/projects/%s/config" % ( project_id )
         return self.get(path=path)
 
     """ Set project config according to http://docs.testdroid.com/_pages/client.html#project-config
@@ -438,7 +439,7 @@ class Testdroid:
             sys.exit(1)
 
         if device_group_id is not None:
-            device_group = self.get("/users/%s/device-groups/%s" % (me['id'], device_group_id))
+            device_group = self.get("users/%s/device-groups/%s" % (me['id'], device_group_id))
             if not 'id' in device_group:
                 print "Device group %s not found" % device_group_id
                 sys.exit(1)
@@ -549,6 +550,14 @@ class Testdroid:
     def get_device_run_screenshots_list(self, project_id, test_run_id, device_run_id, limit=0):
         return self.get("me/projects/%s/runs/%s/device-runs/%s/screenshots" % (project_id, test_run_id, device_run_id), payload = {'limit': limit})
 
+    """ Get list of files for device run
+    """
+    def get_device_run_files(self, project_id, test_run_id, device_session_id, tags=None):
+        if tags is None:
+            return self.get("me/projects/%s/runs/%s/device-sessions/%s/output-file-set/files" % (project_id, test_run_id, device_session_id))
+        else:
+            return self.get("me/projects/%s/runs/%s/device-sessions/%s/output-file-set/files?tag[]=%s" % (project_id, test_run_id, device_session_id, tags))
+
     """ Downloads test run files to a directory hierarchy
     """
     def download_test_run(self, project_id, test_run_id):
@@ -559,14 +568,14 @@ class Testdroid:
         logger.info("Test run %s: \"%s\" has %s device runs:" % (test_run['id'], test_run['displayName'], len(device_runs['data'])))
 
         for device_run in device_runs['data']:
-            run_status = device_run['runStatus']
+            state = device_run['state']
             logger.info("")
-            logger.info("%s \"%s\" %s" % (device_run['id'], device_run['device']['displayName'], run_status))
+            logger.info("%s \"%s\" %s" % (device_run['id'], device_run['device']['displayName'], state))
 
-            if run_status in ("SUCCEEDED", "FAILED", "EXCLUDED"):
+            if state in ("ABORTED", "TIMEOUT", "WARNING", "SUCCEEDED", "FAILED", "EXCLUDED"):
                 directory = "%s-%s/%d-%s" % (test_run_id, test_run['displayName'], device_run['id'], device_run['device']['displayName'])
-                session_id = device_run['deviceSessionId']
-                files = self.get("me/projects/%s/runs/%s/device-sessions/%s/output-file-set/files" % (project_id, test_run_id, session_id))
+                session_id = device_run['id']
+                files = self.get_device_run_files(project_id, test_run_id, session_id)
                 for file in files['data']:
                     if file['state'] == "READY":
                         full_path = "%s/%s" % (directory, file['name'])
@@ -713,6 +722,7 @@ Commands:
             "test-run": self.get_test_run,
             "test-runs": self.print_project_test_runs,
             "device-runs": self.get_device_runs,
+            "device-run-files": self.get_device_run_files,
             "download-test-run": self.download_test_run,
             "download-test-screenshots": self.download_test_screenshots
         }
