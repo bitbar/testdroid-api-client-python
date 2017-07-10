@@ -602,11 +602,11 @@ class Testdroid:
         device_runs = self.get_device_runs(project_id, test_run_id)
         logger.info("Test run %s: \"%s\" has %s device runs:" % (test_run['id'], test_run['displayName'], len(device_runs['data'])))
         for device_run in device_runs['data']:
-            logger.info("%s \"%s\" %s" % (device_run['id'], device_run['device']['displayName'], device_run['runStatus']))
+            logger.info("%s \"%s\" %s" % (device_run['id'], device_run['device']['displayName'], device_run['state']))
 
         logger.info("");
         for device_run in device_runs['data']:
-            if device_run['runStatus'] == "SUCCEEDED":
+            if device_run['state'] == "SUCCEEDED":
                 directory = "%s-%s/%d-%s/screenshots" % (test_run['id'], test_run['displayName'], device_run['id'], device_run['device']['displayName'])
                 screenshots = self.get_device_run_screenshots_list(project_id, test_run_id, device_run['id'])
                 no_screenshots = True
