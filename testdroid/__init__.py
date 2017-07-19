@@ -606,7 +606,7 @@ class Testdroid:
 
         logger.info("");
         for device_run in device_runs['data']:
-            if device_run['state'] == "SUCCEEDED":
+            if device_run['state'] in ["SUCCEEDED", "FAILED", "ABORTED", "WARNING", "TIMEOUT"]:
                 directory = "%s-%s/%d-%s/screenshots" % (test_run['id'], test_run['displayName'], device_run['id'], device_run['device']['displayName'])
                 screenshots = self.get_device_run_screenshots_list(project_id, test_run_id, device_run['id'])
                 no_screenshots = True
@@ -638,7 +638,7 @@ class Testdroid:
                 if no_screenshots:
                     logger.info("Device %s has no screenshots - skipping" % device_run['device']['displayName'])
             else:
-                logger.info("Device %s has failed or has not finished - skipping" % device_run['device']['displayName'])
+                logger.info("Device %s has errored or has not finished - skipping" % device_run['device']['displayName'])
 
     def get_parser(self):
         class MyParser(OptionParser):
