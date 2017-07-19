@@ -1,3 +1,5 @@
+2.40
+ * Fixed download_test_screenshots method to work with 2.39+ version of the Testdroid API
 2.6.2
  * Fixes: Init overloading fixed, api key usage for delete and posts
  * Features: Get project config.
