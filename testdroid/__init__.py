@@ -5,7 +5,7 @@ from PIL import Image
 from optparse import OptionParser
 from datetime import datetime
 
-__version__ = '2.40'
+__version__ = '2.41.0'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
@@ -488,13 +488,14 @@ class Testdroid:
             print "Awaiting completion of test run with id %s. Will wait forever polling every %smins." % (test_run_id, Testdroid.polling_interval_mins)
             while True:
                 time.sleep(Testdroid.polling_interval_mins*60)
-                self.access_token = None    #WORKAROUND: access token thinks it's still valid,
-                                            # > token valid for another 633.357925177
-                                            #whilst this happens:
-                                            # > Couldn't establish the state of the test run with id: 72593732. Aborting
-                                            # > {u'error_description': u'Invalid access token: b3e62604-9d2a-49dc-88f5-89786ff5a6b6', u'error': u'invalid_token'}
+                if not self.api_key:
+                    self.access_token = None    #WORKAROUND: access token thinks it's still valid,
+                                                # > token valid for another 633.357925177
+                                                #whilst this happens:
+                                                # > Couldn't establish the state of the test run with id: 72593732. Aborting
+                                                # > {u'error_description': u'Invalid access token: b3e62604-9d2a-49dc-88f5-89786ff5a6b6', u'error': u'invalid_token'}
 
-                self.get_token()            #in case it expired
+                    self.get_token()            #in case it expired
                 testRunStatus = self.get_test_run(project_id, test_run_id)
                 if testRunStatus and testRunStatus.has_key('state'):
                     if testRunStatus['state'] == "FINISHED":
@@ -606,7 +607,7 @@ class Testdroid:
 
         logger.info("");
         for device_run in device_runs['data']:
-            if device_run['state'] == "SUCCEEDED":
+            if device_run['state'] in ["SUCCEEDED", "FAILED", "ABORTED", "WARNING", "TIMEOUT"]:
                 directory = "%s-%s/%d-%s/screenshots" % (test_run['id'], test_run['displayName'], device_run['id'], device_run['device']['displayName'])
                 screenshots = self.get_device_run_screenshots_list(project_id, test_run_id, device_run['id'])
                 no_screenshots = True
@@ -638,7 +639,7 @@ class Testdroid:
                 if no_screenshots:
                     logger.info("Device %s has no screenshots - skipping" % device_run['device']['displayName'])
             else:
-                logger.info("Device %s has failed or has not finished - skipping" % device_run['device']['displayName'])
+                logger.info("Device %s has errored or has not finished - skipping" % device_run['device']['displayName'])
 
     def get_parser(self):
         class MyParser(OptionParser):
