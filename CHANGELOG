@@ -1,3 +1,6 @@
+2.41.0
+ * Fixed bug with api access using api_key without login/pass
+ * Fix for download_test_screenshots method to work with version
 2.40
  * Fixed download_test_screenshots method to work with 2.39+ version of the Testdroid API
 2.6.2
