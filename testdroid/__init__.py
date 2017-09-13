@@ -5,7 +5,7 @@ from PIL import Image
 from optparse import OptionParser
 from datetime import datetime
 
-__version__ = '2.41.0'
+__version__ = '2.41.1'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
@@ -426,7 +426,7 @@ class Testdroid:
 
     """ Start a test run on a device group
     """
-    def start_test_run(self, project_id, device_group_id=None, device_model_ids=None, name=None):
+    def start_test_run(self, project_id, device_group_id=None, device_model_ids=None, name=None, additional_params={}):
         me = self.get_me()
         payload={} if name is None else {'name':name}
         project = self.get_project(project_id)
@@ -461,6 +461,7 @@ class Testdroid:
 
         # Start run
         path = "/users/%s/projects/%s/runs" %  ( me['id'], project_id )
+        payload.update(additional_params)
         reply = self.post(path=path, payload=payload)
         print "Test run id: %s" % reply['id']
         print "Name: %s" % reply['displayName']
