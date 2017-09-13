@@ -5,7 +5,7 @@ from PIL import Image
 from optparse import OptionParser
 from datetime import datetime
 
-__version__ = '2.41.0'
+__version__ = '2.41.1'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
