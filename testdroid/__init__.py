@@ -542,6 +542,11 @@ class Testdroid:
     def get_test_run(self, project_id, test_run_id):
         return self.get("me/projects/%s/runs/%s" % (project_id, test_run_id))
 
+    """Abort a test run
+    """
+    def abort_test_run(self, project_id, test_run_id):
+        return self.post("me/projects/%s/runs/%s/abort" % (project_id, test_run_id))
+
     """ Return device runs for a project
     """
     def get_device_runs(self, project_id, test_run_id, limit=0):
