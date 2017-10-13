@@ -5,7 +5,7 @@ from PIL import Image
 from optparse import OptionParser
 from datetime import datetime
 
-__version__ = '2.39'
+__version__ = '2.41.2'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
@@ -426,7 +426,7 @@ class Testdroid:
 
     """ Start a test run on a device group
     """
-    def start_test_run(self, project_id, device_group_id=None, device_model_ids=None, name=None):
+    def start_test_run(self, project_id, device_group_id=None, device_model_ids=None, name=None, additional_params={}):
         me = self.get_me()
         payload={} if name is None else {'name':name}
         project = self.get_project(project_id)
@@ -461,6 +461,7 @@ class Testdroid:
 
         # Start run
         path = "/users/%s/projects/%s/runs" %  ( me['id'], project_id )
+        payload.update(additional_params)
         reply = self.post(path=path, payload=payload)
         print "Test run id: %s" % reply['id']
         print "Name: %s" % reply['displayName']
@@ -488,13 +489,14 @@ class Testdroid:
             print "Awaiting completion of test run with id %s. Will wait forever polling every %smins." % (test_run_id, Testdroid.polling_interval_mins)
             while True:
                 time.sleep(Testdroid.polling_interval_mins*60)
-                self.access_token = None    #WORKAROUND: access token thinks it's still valid,
-                                            # > token valid for another 633.357925177
-                                            #whilst this happens:
-                                            # > Couldn't establish the state of the test run with id: 72593732. Aborting
-                                            # > {u'error_description': u'Invalid access token: b3e62604-9d2a-49dc-88f5-89786ff5a6b6', u'error': u'invalid_token'}
+                if not self.api_key:
+                    self.access_token = None    #WORKAROUND: access token thinks it's still valid,
+                                                # > token valid for another 633.357925177
+                                                #whilst this happens:
+                                                # > Couldn't establish the state of the test run with id: 72593732. Aborting
+                                                # > {u'error_description': u'Invalid access token: b3e62604-9d2a-49dc-88f5-89786ff5a6b6', u'error': u'invalid_token'}
 
-                self.get_token()            #in case it expired
+                    self.get_token()            #in case it expired
                 testRunStatus = self.get_test_run(project_id, test_run_id)
                 if testRunStatus and testRunStatus.has_key('state'):
                     if testRunStatus['state'] == "FINISHED":
@@ -539,6 +541,11 @@ class Testdroid:
     """
     def get_test_run(self, project_id, test_run_id):
         return self.get("me/projects/%s/runs/%s" % (project_id, test_run_id))
+
+    """Abort a test run
+    """
+    def abort_test_run(self, project_id, test_run_id):
+        return self.post("me/projects/%s/runs/%s/abort" % (project_id, test_run_id))
 
     """ Return device runs for a project
     """
@@ -602,11 +609,11 @@ class Testdroid:
         device_runs = self.get_device_runs(project_id, test_run_id)
         logger.info("Test run %s: \"%s\" has %s device runs:" % (test_run['id'], test_run['displayName'], len(device_runs['data'])))
         for device_run in device_runs['data']:
-            logger.info("%s \"%s\" %s" % (device_run['id'], device_run['device']['displayName'], device_run['runStatus']))
+            logger.info("%s \"%s\" %s" % (device_run['id'], device_run['device']['displayName'], device_run['state']))
 
         logger.info("");
         for device_run in device_runs['data']:
-            if device_run['runStatus'] == "SUCCEEDED":
+            if device_run['state'] in ["SUCCEEDED", "FAILED", "ABORTED", "WARNING", "TIMEOUT"]:
                 directory = "%s-%s/%d-%s/screenshots" % (test_run['id'], test_run['displayName'], device_run['id'], device_run['device']['displayName'])
                 screenshots = self.get_device_run_screenshots_list(project_id, test_run_id, device_run['id'])
                 no_screenshots = True
@@ -638,7 +645,7 @@ class Testdroid:
                 if no_screenshots:
                     logger.info("Device %s has no screenshots - skipping" % device_run['device']['displayName'])
             else:
-                logger.info("Device %s has failed or has not finished - skipping" % device_run['device']['displayName'])
+                logger.info("Device %s has errored or has not finished - skipping" % device_run['device']['displayName'])
 
     def get_parser(self):
         class MyParser(OptionParser):
