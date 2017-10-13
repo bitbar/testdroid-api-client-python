@@ -1,3 +1,5 @@
+2.41.2
+ * Add api to abort a test run
 2.41.1
  * Possibility to include additional custom params when launching new test run
 2.41.0
