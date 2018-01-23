@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import os, sys, requests, json, logging, time, httplib, base64
-from PIL import Image
 from optparse import OptionParser
 from datetime import datetime
 
@@ -633,9 +632,15 @@ class Testdroid:
                         ''' Earlier downloaded images are checked, and if needed re-downloaded.
                         '''
                         try:
+                            from PIL import Image
                             im=Image.open(full_path)
                             im.verify()
                             logger.info("Screenshot %s already exists - skipping download" % full_path)
+                        except ImportError:
+                            if os.path.isfile(full_path):  # fallback if Pillow fails to import
+                                logger.info("Screenshot %s already exists - skipping download" % full_path)
+                            else:
+                                raise # jump to next block
                         except:
                             url = "me/projects/%s/runs/%s/device-runs/%s/screenshots/%s" % (project_id, test_run['id'], device_run['id'], screenshot['id'])
                             prog = DownloadProgressBar()
