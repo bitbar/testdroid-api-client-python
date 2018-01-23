@@ -1,3 +1,5 @@
+2.41.3
+ * Isolate Pillow import, with fallback if import fails
 2.41.2
  * Add api to abort a test run
 2.41.1
