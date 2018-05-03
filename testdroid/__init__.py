@@ -4,7 +4,7 @@ import os, sys, requests, json, logging, time, httplib, base64
 from optparse import OptionParser
 from datetime import datetime
 
-__version__ = '2.41.3'
+__version__ = '2.41.4'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
