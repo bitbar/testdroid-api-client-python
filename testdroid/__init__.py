@@ -426,45 +426,38 @@ class Testdroid:
     """ Start a test run on a device group
     """
     def start_test_run(self, project_id, device_group_id=None, device_model_ids=None, name=None, additional_params={}):
-        me = self.get_me()
-        payload={} if name is None else {'name':name}
+        # check project validity
         project = self.get_project(project_id)
         if not 'id' in project:
             print "Project %s not found" % project_id
             sys.exit(1)
 
-        if device_group_id is None and device_model_ids is None:
-            print "Device group or device models must be defined"
-            sys.exit(1)
+        # start populating parameters for the request payload...
+        payload={}
+
+        if name is not None:
+            payload['name'] = name
 
         if device_group_id is not None:
-            device_group = self.get("users/%s/device-groups/%s" % (me['id'], device_group_id))
-            if not 'id' in device_group:
-                print "Device group %s not found" % device_group_id
-                sys.exit(1)
-
-            if int(device_group['deviceCount']) == 0:
-                print "ERROR: No devices at device group %s" % device_group['id']
-                sys.exit(1)
-
-            # Update device group
-            reply = self.set_project_config(project_id=project_id, payload={'usedDeviceGroupId': device_group_id})
-            if int(reply['usedDeviceGroupId']) != int(device_group_id):
-                print "Unable to set used device group to %s for project %s" % (device_group_id, project_id)
-                sys.exit(1)
-            print "Starting test run on project %s \"%s\" using device group %s \"%s\"" % (project['id'], project['name'], device_group['id'], device_group['displayName'])
-
+            payload['usedDeviceGroupId'] = device_group_id
+            print "Starting test run on project %s \"%s\" using device group %s" % (project['id'], project['name'], device_group_id)
+        elif device_model_ids is not None:
+            payload['usedDeviceIds[]'] = device_model_ids
+            print "Starting test run on project %s \"%s\" using device models ids %s" % (project['id'], project['name'], device_model_ids)
         else:
-            payload={'usedDeviceIds[]': device_model_ids}
-            print "Starting test run on project %s \"%s\" using device models ids %s " % (project['id'], project['name'], device_model_ids)
+            print "Either device group or device models must be defined"
+            sys.exit(1)
 
-        # Start run
-        path = "/users/%s/projects/%s/runs" %  ( me['id'], project_id )
+        # add optional request params that the user might have specified
         payload.update(additional_params)
-        reply = self.post(path=path, payload=payload)
-        print "Test run id: %s" % reply['id']
-        print "Name: %s" % reply['displayName']
-        return reply['id']
+
+        # actually start the test run
+        me = self.get_me()
+        path = "/users/%s/projects/%s/runs" % (me['id'], project_id)
+        test_run = self.post(path=path, payload=payload)
+        print "Test run id: %s" % test_run['id']
+        print "Name: %s" % test_run['displayName']
+        return test_run['id']
 
 
     """ Start a test run on a device group and wait for completion
