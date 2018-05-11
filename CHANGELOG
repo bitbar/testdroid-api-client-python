@@ -1,3 +1,5 @@
+2.41.4
+ * Don't separately update project when calling start_test_run()
 2.41.3
  * Isolate Pillow import, with fallback if import fails
 2.41.2
