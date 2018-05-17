@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import os, sys, requests, json, logging, time, httplib, base64
+import os, sys, requests, json, logging, time,  base64
+
+if sys.version_info[0] > 2:
+    import http.client
+else:
+    import httplib
+
 from optparse import OptionParser
 from datetime import datetime
 
@@ -62,7 +68,7 @@ class DownloadProgressBar:
         all_full = self.width - 2
         num_hashes = int(round((percent_done / 100.0) * all_full))
         self.prog_bar = '  [' + self.fill_char * num_hashes + ' ' * (all_full - num_hashes) + ']'
-        pct_place = (len(self.prog_bar) / 2) - len(str(percent_done))
+        pct_place = (len(self.prog_bar) // 2) - len(str(percent_done))
         pct_string = '%d%%' % percent_done
         self.duration = int(round(time.time()-self.started))
         self.eta = int(round( self.duration / (percent_done / 100.0)))-self.duration if percent_done > 5 else 'N/A'
@@ -74,9 +80,9 @@ class DownloadProgressBar:
         else:
             self.prog_bar += '                   '
         if sys.platform.lower().startswith('win'):
-            print self, '\r',
+            print(self +'\r')
         else:
-            print self, chr(27) + '[A'
+            print(str(self) + chr(27) + '[A')
 
     def __str__(self):
         return str(self.prog_bar)
@@ -140,7 +146,7 @@ class Testdroid:
                 data = payload,
                 headers = { "Accept": "application/json" }
                 )
-            if res.status_code not in range(200, 300):
+            if res.status_code not in list(range(200, 300)):
                 raise RequestResponseError(res.text, res.status_code)
 
             reply = res.json()
@@ -160,8 +166,8 @@ class Testdroid:
                 data = payload,
                 headers = { "Accept": "application/json" }
                 )
-            if res.status_code not in range(200, 300):
-                print "FAILED: Unable to get a new access token using refresh token"
+            if res.status_code not in list(range(200, 300)):
+                print("FAILED: Unable to get a new access token using refresh token")
                 self.access_token = None
                 return self.get_token()
 
@@ -177,7 +183,9 @@ class Testdroid:
     """
     def _build_headers(self):
         if self.api_key:
-            return {'Authorization' : 'Basic %s' % base64.b64encode(self.api_key+":"), 'Accept' : 'application/json' }
+            apikey = {'Authorization' : 'Basic %s' % base64.b64encode((self.api_key+":").encode(encoding='utf_8')).decode(), 'Accept' : 'application/json' }
+            #print(apikey)
+            return apikey
         else:
             return { 'Authorization': 'Bearer %s' % self.get_token(), 'Accept': 'application/json' }
 
@@ -226,7 +234,7 @@ class Testdroid:
         url = "%s/api/v2/%s" % (self.cloud_url, path)
         files = {'file': open(filename, 'rb')}
         res = requests.post(url, files=files, headers=self._build_headers())
-        if res.status_code not in range(200, 300):
+        if res.status_code not in list(range(200, 300)):
             raise RequestResponseError(res.text, res.status_code)
 
     """ GET from API resource
@@ -237,9 +245,9 @@ class Testdroid:
             path = cut_path[1]
 
         url = "%s/api/v2/%s" % (self.cloud_url, path)
-        headers = dict(self._build_headers().items() + headers.items())
+        headers = dict(list(self._build_headers().items()) + list(headers.items()))
         res =  requests.get(url, params=payload, headers=headers)
-        if res.status_code not in range(200, 300):
+        if res.status_code not in list(range(200, 300)):
             raise RequestResponseError(res.text, res.status_code)
         logger.debug(res.text)
         if headers['Accept'] == 'application/json':
@@ -250,20 +258,20 @@ class Testdroid:
     """ POST against API resources
     """
     def post(self, path=None, payload=None, headers={}):
-        headers = dict(self._build_headers().items() + headers.items())
+        headers = dict(list(self._build_headers().items()) + list(headers.items()))
         url = "%s/api/v2/%s" % (self.cloud_url, path)
         res = requests.post(url, payload, headers=headers)
-        if res.status_code not in range(200, 300):
+        if res.status_code not in list(range(200, 300)):
             raise RequestResponseError(res.text, res.status_code)
         return res.json()
 
     """ DELETE API resource
     """
     def delete(self, path=None, payload=None, headers={}):
-        headers = dict(self._build_headers().items() + headers.items())
+        headers = dict(list(self._build_headers().items()) + list(headers.items()))
         url = "%s/api/v2/%s" % (self.cloud_url, path)
         res = requests.delete(url, headers=headers)
-        if res.status_code not in range(200, 300):
+        if res.status_code not in list(range(200, 300)):
             raise RequestResponseError(res.text, res.status_code)
         return res
 
@@ -286,33 +294,33 @@ class Testdroid:
     """
     def print_device_groups(self, limit=0):
         for device_group in self.get_device_groups(limit)['data']:
-            print "%s %s %s %s devices" % (str(device_group['id']).ljust(12), device_group['displayName'].ljust(30), device_group['osType'].ljust(10), device_group['deviceCount'])
+            print("%s %s %s %s devices" % (str(device_group['id']).ljust(12), device_group['displayName'].ljust(30), device_group['osType'].ljust(10), device_group['deviceCount']))
 
     """ Print available free Android devices
     """
     def print_available_free_android_devices(self, limit=0):
-        print ""
-        print "Available Free Android Devices"
-        print "------------------------------"
+        print("")
+        print("Available Free Android Devices")
+        print("------------------------------")
 
         for device in self.get_devices(limit)['data']:
             if device['creditsPrice'] == 0 and device['locked'] == False and device['osType'] == "ANDROID":
-                    print device['displayName']
+                    print(device['displayName'])
 
-        print ""
+        print("")
 
     """ Print available free iOS devices
     """
     def print_available_free_ios_devices(self, limit=0):
-        print ""
-        print "Available Free iOS Devices"
-        print "--------------------------"
+        print("")
+        print("Available Free iOS Devices")
+        print("--------------------------")
 
         for device in self.get_devices(limit)['data']:
             if device['creditsPrice'] == 0 and device['locked'] == False and device['osType'] == "IOS":
-                print device['displayName']
+                print(device['displayName'])
 
-        print ""
+        print("")
 
     """ Print available free devices
     """
@@ -325,7 +333,7 @@ class Testdroid:
     """
     def create_project(self, project_name, project_type):
         project = self.post(path="me/projects", payload={"name": project_name, "type": project_type})
-        print project
+        print(project)
 
         logger.info("Project %s: %s (%s) created" % (project['id'], project['name'], project['type'] ))
         return project
@@ -351,10 +359,10 @@ class Testdroid:
     """
     def print_projects(self, limit=0):
         me = self.get_me()
-        print "Projects for %s <%s>:" % (me['name'], me['email'])
-        print
+        print("Projects for %s <%s>:" % (me['name'], me['email']))
+        
         for project in self.get_projects(limit)['data']:
-            print "%s %s \"%s\"" % (str(project['id']).ljust(10), project['type'].ljust(15), project['name'])
+            print("%s %s \"%s\"" % (str(project['id']).ljust(10), project['type'].ljust(15), project['name']))
 
     """ Upload application file to project
     """
@@ -429,7 +437,7 @@ class Testdroid:
         # check project validity
         project = self.get_project(project_id)
         if not 'id' in project:
-            print "Project %s not found" % project_id
+            print("Project %s not found" % project_id)
             sys.exit(1)
 
         # start populating parameters for the request payload...
@@ -440,12 +448,12 @@ class Testdroid:
 
         if device_group_id is not None:
             payload['usedDeviceGroupId'] = device_group_id
-            print "Starting test run on project %s \"%s\" using device group %s" % (project['id'], project['name'], device_group_id)
+            print("Starting test run on project %s \"%s\" using device group %s" % (project['id'], project['name'], device_group_id))
         elif device_model_ids is not None:
             payload['usedDeviceIds[]'] = device_model_ids
-            print "Starting test run on project %s \"%s\" using device models ids %s" % (project['id'], project['name'], device_model_ids)
+            print("Starting test run on project %s \"%s\" using device models ids %s" % (project['id'], project['name'], device_model_ids))
         else:
-            print "Either device group or device models must be defined"
+            print("Either device group or device models must be defined")
             sys.exit(1)
 
         # add optional request params that the user might have specified
@@ -455,8 +463,8 @@ class Testdroid:
         me = self.get_me()
         path = "/users/%s/projects/%s/runs" % (me['id'], project_id)
         test_run = self.post(path=path, payload=payload)
-        print "Test run id: %s" % test_run['id']
-        print "Name: %s" % test_run['displayName']
+        print("Test run id: %s" % test_run['id'])
+        print("Name: %s" % test_run['displayName'])
         return test_run['id']
 
 
@@ -478,7 +486,7 @@ class Testdroid:
     """
     def wait_test_run(self, project_id, test_run_id):
         if test_run_id:
-            print "Awaiting completion of test run with id %s. Will wait forever polling every %smins." % (test_run_id, Testdroid.polling_interval_mins)
+            print("Awaiting completion of test run with id %s. Will wait forever polling every %smins." % (test_run_id, Testdroid.polling_interval_mins))
             while True:
                 time.sleep(Testdroid.polling_interval_mins*60)
                 if not self.api_key:
@@ -490,19 +498,19 @@ class Testdroid:
 
                     self.get_token()            #in case it expired
                 testRunStatus = self.get_test_run(project_id, test_run_id)
-                if testRunStatus and testRunStatus.has_key('state'):
+                if testRunStatus and 'state' in testRunStatus:
                     if testRunStatus['state'] == "FINISHED":
-                        print "The test run with id: %s has FINISHED" % test_run_id
+                        print("The test run with id: %s has FINISHED" % test_run_id)
                         break
                     elif testRunStatus['state'] == "WAITING":
-                        print "[%s] The test run with id: %s is awaiting to be scheduled" % (time.strftime("%H:%M:%S"), test_run_id)
+                        print("[%s] The test run with id: %s is awaiting to be scheduled" % (time.strftime("%H:%M:%S"), test_run_id))
                         continue
                     elif testRunStatus['state'] == "RUNNING":
-                        print "[%s] The test run with id: %s is running" % (time.strftime("%H:%M:%S"), test_run_id)
+                        print("[%s] The test run with id: %s is running" % (time.strftime("%H:%M:%S"), test_run_id))
                         continue
 
-                print "Couldn't establish the state of the test run with id: %s. Aborting" % test_run_id
-                print testRunStatus
+                print("Couldn't establish the state of the test run with id: %s. Aborting" % test_run_id)
+                print(testRunStatus)
                 sys.exit(1)
 
 
@@ -527,7 +535,7 @@ class Testdroid:
     def print_project_test_runs(self, project_id, limit=0):
         test_runs = self.get_project_test_runs(project_id, limit)['data']
         for test_run in test_runs:
-            print "%s %s  %s %s" % (str(test_run['id']).ljust(10), ts_format(test_run['createTime']), test_run['displayName'].ljust(30), test_run['state'])
+            print("%s %s  %s %s" % (str(test_run['id']).ljust(10), ts_format(test_run['createTime']), test_run['displayName'].ljust(30), test_run['state']))
 
     """ Get a single test run
     """
@@ -584,7 +592,7 @@ class Testdroid:
                         url = "me/files/%s/file" % (file['id'])
                         prog = DownloadProgressBar()
                         self.download(url, full_path, callback=lambda pos, total: prog.update(int(pos), int(total)))
-                        print
+                        print("")
                     else:
                         logger.info("File %s is not ready" % file['name'])
                 if( len(files['data']) == 0 ):
@@ -620,7 +628,7 @@ class Testdroid:
                         url = "me/projects/%s/runs/%s/device-runs/%s/screenshots/%s" % (project_id, test_run['id'], device_run['id'], screenshot['id'])
                         prog = DownloadProgressBar()
                         self.download(url, full_path, callback=lambda pos, total: prog.update(int(pos), int(total)))
-                        print
+                        print("")
                     else:
                         ''' Earlier downloaded images are checked, and if needed re-downloaded.
                         '''
@@ -638,7 +646,7 @@ class Testdroid:
                             url = "me/projects/%s/runs/%s/device-runs/%s/screenshots/%s" % (project_id, test_run['id'], device_run['id'], screenshot['id'])
                             prog = DownloadProgressBar()
                             self.download(url, full_path, callback=lambda pos, total: prog.update(int(pos), int(total)))
-                            print
+                            print("")
 
                 if no_screenshots:
                     logger.info("Device %s has no screenshots - skipping" % device_run['device']['displayName'])
@@ -742,7 +750,7 @@ Commands:
 
         if options.debug:
             logger.setLevel(logging.DEBUG)
-            httplib.HTTPConnection.debuglevel = 1
+            http.client.HTTPConnection.debuglevel = 1
             logging.getLogger().setLevel(logging.DEBUG)
             requests_log = logging.getLogger("requests.packages.urllib3")
             requests_log.setLevel(logging.DEBUG)
@@ -766,7 +774,7 @@ Commands:
             parser.print_help()
             sys.exit(1)
 
-        print command(*args[1:]) or ""
+        print(command(*args[1:]) or "")
         #print json.dumps(result, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
