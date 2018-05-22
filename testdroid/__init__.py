@@ -277,10 +277,27 @@ class Testdroid:
     def get_device_groups(self, limit=0):
         return self.get("me/device-groups", payload = {'limit': limit})
 
+    """ Returns list of frameworks
+    """
+    def get_frameworks(self, limit=0):
+        return self.get("me/available-frameworks", payload = {'limit': limit})
+
+    """ Returns list of project types
+    """
+    def get_project_types(self, limit=0):
+        return self.get("me/available-project-types", payload = {'limit': limit})
+
     """ Returns list of devices
     """
     def get_devices(self, limit=0):
         return self.get(path = "devices", payload = {'limit': limit})
+
+
+    """ Print input files
+    """
+    def print_input_files(self, limit=0):
+        for input_file in self.get_input_files(limit)['data']:
+            print("id:{} name:{} size:{} type:{}".format(input_file['id'],input_file['name'],input_file['size'],input_file['inputType']))
 
     """ Print device groups
     """
@@ -300,6 +317,25 @@ class Testdroid:
                     print device['displayName']
 
         print ""
+    
+    """ Print available frameworks
+    """
+    def print_available_frameworks(self, os_type=None, limit=0):
+        print ""
+        print "Available frameworks"
+        print "------------------------------"
+        for framework in self.get_frameworks(limit)['data']:
+            print("id: {}\tosType:{}\tname:{}".format(framework['id'], framework['osType'], framework['name']))
+
+    """ Print available project type
+    """
+    def print_available_project_types(self, os_type=None, limit=0):
+        print ""
+        print "Available project types"
+        print "------------------------------"
+        for project_type in self.get_project_types(limit)['items']:
+            print("name:{}".format(project_type))
+
 
     """ Print available free iOS devices
     """
@@ -422,6 +458,28 @@ class Testdroid:
             'project_id': project_id
         }
         self.post(path, payload={"frameworkId": frameworkId})
+
+
+    """ Start a test run using test run config
+        e.g '{"frameworkId":12252, 
+        "osType": "ANDROID", 
+        "projectId":1234, 
+        "files":[{"id":9876}, {"id":5432}]
+        "testRunParameters":[{"key":"xyz", "value":"abc"}],
+        "deviceGroupId":6854
+        }'
+        client.start_test_run_using_config(json.dumps({"frameworkId":123213}))
+    """
+    def start_test_run_using_config(self, test_run_config={}):
+        if type(test_run_config) == str:
+            payload = json.loads(test_run_config)
+        else:
+            payload = test_run_config                
+
+        me = self.get_me()
+        path = "users/%s/runs" % (me['id'])
+        test_run = self.post(path=path, payload=test_run_config, headers={'Content-type': 'application/json', 'Accept': 'application/json'})
+        return test_run
 
     """ Start a test run on a device group
     """
@@ -556,6 +614,11 @@ class Testdroid:
             return self.get("me/projects/%s/runs/%s/device-sessions/%s/output-file-set/files" % (project_id, test_run_id, device_session_id))
         else:
             return self.get("me/projects/%s/runs/%s/device-sessions/%s/output-file-set/files?tag[]=%s" % (project_id, test_run_id, device_session_id, tags))
+
+    """ Get list of input files 
+    """
+    def get_input_files(self, limit=0):
+        return self.get("me/files?limit={}&filter=s_direction_eq_INPUT".format(limit))
 
     """ Downloads test run files to a directory hierarchy
     """
@@ -714,6 +777,8 @@ Commands:
             "me": self.get_me,
             "device-groups": self.print_device_groups,
             "available-free-devices": self.print_available_free_devices,
+            "available-frameworks": self.print_available_frameworks,
+            "available-project-types": self.print_available_project_types,
             "projects": self.print_projects,
             "create-project": self.create_project,
             "delete-project": self.delete_project,
@@ -722,12 +787,14 @@ Commands:
             "upload-data": self.upload_data_file,
             "set-project-config": self.set_project_config,
             "start-test-run": self.start_test_run,
+            "start-test-run-using-config": self.start_test_run_using_config,
             "start-wait-download-test-run":self.start_wait_download_test_run,
             "wait-test-run":self.wait_test_run,
             "test-run": self.get_test_run,
             "test-runs": self.print_project_test_runs,
             "device-runs": self.get_device_runs,
             "device-run-files": self.get_device_run_files,
+            "list-input-files": self.print_input_files,
             "download-test-run": self.download_test_run,
             "download-test-screenshots": self.download_test_screenshots
         }
