@@ -282,11 +282,6 @@ class Testdroid:
     def get_frameworks(self, limit=0):
         return self.get("me/available-frameworks", payload = {'limit': limit})
 
-    """ Returns list of project types
-    """
-    def get_project_types(self, limit=0):
-        return self.get("me/available-project-types", payload = {'limit': limit})
-
     """ Returns list of devices
     """
     def get_devices(self, limit=0):
@@ -326,15 +321,6 @@ class Testdroid:
         print "------------------------------"
         for framework in self.get_frameworks(limit)['data']:
             print("id: {}\tosType:{}\tname:{}".format(framework['id'], framework['osType'], framework['name']))
-
-    """ Print available project type
-    """
-    def print_available_project_types(self, os_type=None, limit=0):
-        print ""
-        print "Available project types"
-        print "------------------------------"
-        for project_type in self.get_project_types(limit)['items']:
-            print("name:{}".format(project_type))
 
 
     """ Print available free iOS devices
@@ -778,7 +764,6 @@ Commands:
             "device-groups": self.print_device_groups,
             "available-free-devices": self.print_available_free_devices,
             "available-frameworks": self.print_available_frameworks,
-            "available-project-types": self.print_available_project_types,
             "projects": self.print_projects,
             "create-project": self.create_project,
             "delete-project": self.delete_project,
