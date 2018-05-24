@@ -184,7 +184,6 @@ class Testdroid:
     def _build_headers(self):
         if self.api_key:
             apikey = {'Authorization' : 'Basic %s' % base64.b64encode((self.api_key+":").encode(encoding='utf_8')).decode(), 'Accept' : 'application/json' }
-            #print(apikey)
             return apikey
         else:
             return { 'Authorization': 'Bearer %s' % self.get_token(), 'Accept': 'application/json' }
@@ -329,6 +328,7 @@ class Testdroid:
         for framework in self.get_frameworks(limit)['data']:
             print("id: {}\tosType:{}\tname:{}".format(framework['id'], framework['osType'], framework['name']))
         print("")
+
 
     """ Print available free iOS devices
     """
