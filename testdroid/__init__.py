@@ -6,6 +6,7 @@ if sys.version_info[0] > 2:
     import http.client
 else:
     import httplib
+    assert httplib
 
 from optparse import OptionParser
 from datetime import datetime
@@ -464,10 +465,6 @@ class Testdroid:
         client.start_test_run_using_config(json.dumps({"frameworkId":123213}))
     """
     def start_test_run_using_config(self, test_run_config={}):
-        if type(test_run_config) == str:
-            payload = json.loads(test_run_config)
-        else:
-            payload = test_run_config                
 
         me = self.get_me()
         path = "users/%s/runs" % (me['id'])
