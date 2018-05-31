@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import os, sys, requests, json, logging, time,  base64
+import os, sys, requests, json, logging, time, base64
 
 if sys.version_info[0] > 2:
     import http.client
@@ -129,6 +129,9 @@ class Testdroid:
 
     def set_download_buffer_size(self, download_buffer_size):
         self.download_buffer_size = download_buffer_size
+
+    def set_polling_interval_mins(self, polling_interval_mins):
+        self.polling_interval_mins = polling_interval_mins
 
     """ Get Oauth2 token
     """
@@ -526,9 +529,12 @@ class Testdroid:
     """
     def wait_test_run(self, project_id, test_run_id):
         if test_run_id:
-            print("Awaiting completion of test run with id %s. Will wait forever polling every %smins." % (test_run_id, Testdroid.polling_interval_mins))
+            print("Awaiting completion of test run with id {}. Will wait forever polling every {}.".format(
+                test_run_id,
+                '{} minutes'.format(self.polling_interval_mins) if self.polling_interval_mins != 1 else 'minute'))
+
             while True:
-                time.sleep(Testdroid.polling_interval_mins*60)
+                time.sleep(self.polling_interval_mins * 60)
                 if not self.api_key:
                     self.access_token = None    #WORKAROUND: access token thinks it's still valid,
                                                 # > token valid for another 633.357925177
@@ -756,6 +762,8 @@ Commands:
                           help="Password. Required if username is used. You can use environment variable TESTDROID_PASSWORD as well.")
         parser.add_option("-c", "--url", dest="url", default="https://cloud.bitbar.com",
                           help="Cloud endpoint. Default is https://cloud.bitbar.com. You can use environment variable TESTDROID_URL as well.")
+        parser.add_option("-i", "--interval", dest="interval",
+                          help="How frequently the status of a test run should be checked (in minutes). Can be used with the command wait-test-run.")
         parser.add_option("-q", "--quiet", action="store_true", dest="quiet",
                           help="Quiet mode")
         parser.add_option("-d", "--debug", action="store_true", dest="debug",
@@ -811,11 +819,18 @@ Commands:
         password = options.password or os.environ.get('TESTDROID_PASSWORD')
         apikey = options.apikey or os.environ.get('TESTDROID_APIKEY')
         url = os.environ.get('TESTDROID_URL') or options.url
+        polling_interval_mins = 10
+
+        try:
+            polling_interval_mins = max(int(options.interval), 1)
+        except:
+            polling_interval_mins = 10
 
         self.set_username(username)
         self.set_password(password)
         self.set_apikey(apikey)
         self.set_url(url)
+        self.set_polling_interval_mins(polling_interval_mins)
 
         command = commands[args[0]]
         if not command:
