@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import os, sys, requests, json, logging, time, base64
+import os, sys, requests, json, logging, time, base64, imghdr
 
 if sys.version_info[0] > 2:
     import http.client
@@ -684,15 +684,10 @@ class Testdroid:
                         ''' Earlier downloaded images are checked, and if needed re-downloaded.
                         '''
                         try:
-                            from PIL import Image
-                            im=Image.open(full_path)
-                            im.verify()
-                            logger.info("Screenshot %s already exists - skipping download" % full_path)
-                        except ImportError:
-                            if os.path.isfile(full_path):  # fallback if Pillow fails to import
+                            if imghdr.what(full_path) in ['jpeg', 'png']:
                                 logger.info("Screenshot %s already exists - skipping download" % full_path)
                             else:
-                                raise # jump to next block
+                                raise
                         except:
                             url = "me/projects/%s/runs/%s/device-runs/%s/screenshots/%s" % (project_id, test_run['id'], device_run['id'], screenshot['id'])
                             prog = DownloadProgressBar()
