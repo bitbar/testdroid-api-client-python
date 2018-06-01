@@ -688,11 +688,6 @@ class Testdroid:
                                 logger.info("Screenshot %s already exists - skipping download" % full_path)
                             else:
                                 raise
-                        except ImportError:
-                            if os.path.isfile(full_path):  # fallback if a valid image header can't be found
-                                logger.info("Screenshot %s already exists - skipping download" % full_path)
-                            else:
-                                raise # jump to next block
                         except:
                             url = "me/projects/%s/runs/%s/device-runs/%s/screenshots/%s" % (project_id, test_run['id'], device_run['id'], screenshot['id'])
                             prog = DownloadProgressBar()
