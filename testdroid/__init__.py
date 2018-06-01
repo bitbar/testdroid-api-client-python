@@ -1,10 +1,17 @@
 # -*- coding: utf-8 -*-
 
-import os, sys, requests, json, logging, time, httplib, base64
+import os, sys, requests, json, logging, time, base64, imghdr
+
+if sys.version_info[0] > 2:
+    import http.client
+else:
+    import httplib
+    assert httplib
+
 from optparse import OptionParser
 from datetime import datetime
 
-__version__ = '2.41.4'
+__version__ = '2.42.1'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
@@ -62,7 +69,7 @@ class DownloadProgressBar:
         all_full = self.width - 2
         num_hashes = int(round((percent_done / 100.0) * all_full))
         self.prog_bar = '  [' + self.fill_char * num_hashes + ' ' * (all_full - num_hashes) + ']'
-        pct_place = (len(self.prog_bar) / 2) - len(str(percent_done))
+        pct_place = (len(self.prog_bar) // 2) - len(str(percent_done))
         pct_string = '%d%%' % percent_done
         self.duration = int(round(time.time()-self.started))
         self.eta = int(round( self.duration / (percent_done / 100.0)))-self.duration if percent_done > 5 else 'N/A'
@@ -74,9 +81,9 @@ class DownloadProgressBar:
         else:
             self.prog_bar += '                   '
         if sys.platform.lower().startswith('win'):
-            print self, '\r',
+            print(self +'\r')
         else:
-            print self, chr(27) + '[A'
+            print(str(self) + chr(27) + '[A')
 
     def __str__(self):
         return str(self.prog_bar)
@@ -99,13 +106,13 @@ class Testdroid:
     # polling interval when awaiting for test run completion
     polling_interval_mins = 10
 
-    """ Constructor, defaults against cloud.testdroid.com
+    """ Constructor, defaults against cloud.bitbar.com
     """
     def __init__(self, **kwargs):
         self.api_key = kwargs.get('apikey')
         self.username = kwargs.get('username')
         self.password = kwargs.get('password')
-        self.cloud_url = kwargs.get('url') or "https://cloud.testdroid.com"
+        self.cloud_url = kwargs.get('url') or "https://cloud.bitbar.com"
         self.download_buffer_size = kwargs.get('download_buffer_size') or 65536
 
     def set_apikey(self, apikey):
@@ -122,6 +129,9 @@ class Testdroid:
 
     def set_download_buffer_size(self, download_buffer_size):
         self.download_buffer_size = download_buffer_size
+
+    def set_polling_interval_mins(self, polling_interval_mins):
+        self.polling_interval_mins = polling_interval_mins
 
     """ Get Oauth2 token
     """
@@ -140,7 +150,7 @@ class Testdroid:
                 data = payload,
                 headers = { "Accept": "application/json" }
                 )
-            if res.status_code not in range(200, 300):
+            if res.status_code not in list(range(200, 300)):
                 raise RequestResponseError(res.text, res.status_code)
 
             reply = res.json()
@@ -160,8 +170,8 @@ class Testdroid:
                 data = payload,
                 headers = { "Accept": "application/json" }
                 )
-            if res.status_code not in range(200, 300):
-                print "FAILED: Unable to get a new access token using refresh token"
+            if res.status_code not in list(range(200, 300)):
+                print("FAILED: Unable to get a new access token using refresh token")
                 self.access_token = None
                 return self.get_token()
 
@@ -177,7 +187,8 @@ class Testdroid:
     """
     def _build_headers(self):
         if self.api_key:
-            return {'Authorization' : 'Basic %s' % base64.b64encode(self.api_key+":"), 'Accept' : 'application/json' }
+            apikey = {'Authorization' : 'Basic %s' % base64.b64encode((self.api_key+":").encode(encoding='utf_8')).decode(), 'Accept' : 'application/json' }
+            return apikey
         else:
             return { 'Authorization': 'Bearer %s' % self.get_token(), 'Accept': 'application/json' }
 
@@ -226,7 +237,7 @@ class Testdroid:
         url = "%s/api/v2/%s" % (self.cloud_url, path)
         files = {'file': open(filename, 'rb')}
         res = requests.post(url, files=files, headers=self._build_headers())
-        if res.status_code not in range(200, 300):
+        if res.status_code not in list(range(200, 300)):
             raise RequestResponseError(res.text, res.status_code)
 
     """ GET from API resource
@@ -237,9 +248,9 @@ class Testdroid:
             path = cut_path[1]
 
         url = "%s/api/v2/%s" % (self.cloud_url, path)
-        headers = dict(self._build_headers().items() + headers.items())
+        headers = dict(list(self._build_headers().items()) + list(headers.items()))
         res =  requests.get(url, params=payload, headers=headers)
-        if res.status_code not in range(200, 300):
+        if res.status_code not in list(range(200, 300)):
             raise RequestResponseError(res.text, res.status_code)
         logger.debug(res.text)
         if headers['Accept'] == 'application/json':
@@ -250,20 +261,20 @@ class Testdroid:
     """ POST against API resources
     """
     def post(self, path=None, payload=None, headers={}):
-        headers = dict(self._build_headers().items() + headers.items())
+        headers = dict(list(self._build_headers().items()) + list(headers.items()))
         url = "%s/api/v2/%s" % (self.cloud_url, path)
         res = requests.post(url, payload, headers=headers)
-        if res.status_code not in range(200, 300):
+        if res.status_code not in list(range(200, 300)):
             raise RequestResponseError(res.text, res.status_code)
         return res.json()
 
     """ DELETE API resource
     """
     def delete(self, path=None, payload=None, headers={}):
-        headers = dict(self._build_headers().items() + headers.items())
+        headers = dict(list(self._build_headers().items()) + list(headers.items()))
         url = "%s/api/v2/%s" % (self.cloud_url, path)
         res = requests.delete(url, headers=headers)
-        if res.status_code not in range(200, 300):
+        if res.status_code not in list(range(200, 300)):
             raise RequestResponseError(res.text, res.status_code)
         return res
 
@@ -282,11 +293,6 @@ class Testdroid:
     def get_frameworks(self, limit=0):
         return self.get("me/available-frameworks", payload = {'limit': limit})
 
-    """ Returns list of project types
-    """
-    def get_project_types(self, limit=0):
-        return self.get("me/available-project-types", payload = {'limit': limit})
-
     """ Returns list of devices
     """
     def get_devices(self, limit=0):
@@ -303,52 +309,43 @@ class Testdroid:
     """
     def print_device_groups(self, limit=0):
         for device_group in self.get_device_groups(limit)['data']:
-            print "%s %s %s %s devices" % (str(device_group['id']).ljust(12), device_group['displayName'].ljust(30), device_group['osType'].ljust(10), device_group['deviceCount'])
+            print("%s %s %s %s devices" % (str(device_group['id']).ljust(12), device_group['displayName'].ljust(30), device_group['osType'].ljust(10), device_group['deviceCount']))
 
     """ Print available free Android devices
     """
     def print_available_free_android_devices(self, limit=0):
-        print ""
-        print "Available Free Android Devices"
-        print "------------------------------"
+        print("")
+        print("Available Free Android Devices")
+        print("------------------------------")
 
         for device in self.get_devices(limit)['data']:
             if device['creditsPrice'] == 0 and device['locked'] == False and device['osType'] == "ANDROID":
-                    print device['displayName']
-
-        print ""
+                    print(device['displayName'])
+        print("")
     
     """ Print available frameworks
     """
     def print_available_frameworks(self, os_type=None, limit=0):
-        print ""
-        print "Available frameworks"
-        print "------------------------------"
+        print("")
+        print("Available frameworks")
+        print("------------------------------")
         for framework in self.get_frameworks(limit)['data']:
             print("id: {}\tosType:{}\tname:{}".format(framework['id'], framework['osType'], framework['name']))
-
-    """ Print available project type
-    """
-    def print_available_project_types(self, os_type=None, limit=0):
-        print ""
-        print "Available project types"
-        print "------------------------------"
-        for project_type in self.get_project_types(limit)['items']:
-            print("name:{}".format(project_type))
+        print("")
 
 
     """ Print available free iOS devices
     """
     def print_available_free_ios_devices(self, limit=0):
-        print ""
-        print "Available Free iOS Devices"
-        print "--------------------------"
+        print("")
+        print("Available Free iOS Devices")
+        print("--------------------------")
 
         for device in self.get_devices(limit)['data']:
             if device['creditsPrice'] == 0 and device['locked'] == False and device['osType'] == "IOS":
-                print device['displayName']
+                print(device['displayName'])
 
-        print ""
+        print("")
 
     """ Print available free devices
     """
@@ -361,7 +358,7 @@ class Testdroid:
     """
     def create_project(self, project_name, project_type):
         project = self.post(path="me/projects", payload={"name": project_name, "type": project_type})
-        print project
+        print(project)
 
         logger.info("Project %s: %s (%s) created" % (project['id'], project['name'], project['type'] ))
         return project
@@ -387,10 +384,10 @@ class Testdroid:
     """
     def print_projects(self, limit=0):
         me = self.get_me()
-        print "Projects for %s <%s>:" % (me['name'], me['email'])
-        print
+        print("Projects for %s <%s>:" % (me['name'], me['email']))
+        
         for project in self.get_projects(limit)['data']:
-            print "%s %s \"%s\"" % (str(project['id']).ljust(10), project['type'].ljust(15), project['name'])
+            print("%s %s \"%s\"" % (str(project['id']).ljust(10), project['type'].ljust(15), project['name']))
 
     """ Upload application file to project
     """
@@ -471,10 +468,6 @@ class Testdroid:
         client.start_test_run_using_config(json.dumps({"frameworkId":123213}))
     """
     def start_test_run_using_config(self, test_run_config={}):
-        if type(test_run_config) == str:
-            payload = json.loads(test_run_config)
-        else:
-            payload = test_run_config                
 
         me = self.get_me()
         path = "users/%s/runs" % (me['id'])
@@ -487,7 +480,7 @@ class Testdroid:
         # check project validity
         project = self.get_project(project_id)
         if not 'id' in project:
-            print "Project %s not found" % project_id
+            print("Project %s not found" % project_id)
             sys.exit(1)
 
         # start populating parameters for the request payload...
@@ -498,12 +491,12 @@ class Testdroid:
 
         if device_group_id is not None:
             payload['usedDeviceGroupId'] = device_group_id
-            print "Starting test run on project %s \"%s\" using device group %s" % (project['id'], project['name'], device_group_id)
+            print("Starting test run on project %s \"%s\" using device group %s" % (project['id'], project['name'], device_group_id))
         elif device_model_ids is not None:
             payload['usedDeviceIds[]'] = device_model_ids
-            print "Starting test run on project %s \"%s\" using device models ids %s" % (project['id'], project['name'], device_model_ids)
+            print("Starting test run on project %s \"%s\" using device models ids %s" % (project['id'], project['name'], device_model_ids))
         else:
-            print "Either device group or device models must be defined"
+            print("Either device group or device models must be defined")
             sys.exit(1)
 
         # add optional request params that the user might have specified
@@ -513,8 +506,8 @@ class Testdroid:
         me = self.get_me()
         path = "/users/%s/projects/%s/runs" % (me['id'], project_id)
         test_run = self.post(path=path, payload=payload)
-        print "Test run id: %s" % test_run['id']
-        print "Name: %s" % test_run['displayName']
+        print("Test run id: %s" % test_run['id'])
+        print("Name: %s" % test_run['displayName'])
         return test_run['id']
 
 
@@ -536,9 +529,12 @@ class Testdroid:
     """
     def wait_test_run(self, project_id, test_run_id):
         if test_run_id:
-            print "Awaiting completion of test run with id %s. Will wait forever polling every %smins." % (test_run_id, Testdroid.polling_interval_mins)
+            print("Awaiting completion of test run with id {}. Will wait forever polling every {}.".format(
+                test_run_id,
+                '{} minutes'.format(self.polling_interval_mins) if self.polling_interval_mins != 1 else 'minute'))
+
             while True:
-                time.sleep(Testdroid.polling_interval_mins*60)
+                time.sleep(self.polling_interval_mins * 60)
                 if not self.api_key:
                     self.access_token = None    #WORKAROUND: access token thinks it's still valid,
                                                 # > token valid for another 633.357925177
@@ -548,19 +544,19 @@ class Testdroid:
 
                     self.get_token()            #in case it expired
                 testRunStatus = self.get_test_run(project_id, test_run_id)
-                if testRunStatus and testRunStatus.has_key('state'):
+                if testRunStatus and 'state' in testRunStatus:
                     if testRunStatus['state'] == "FINISHED":
-                        print "The test run with id: %s has FINISHED" % test_run_id
+                        print("The test run with id: %s has FINISHED" % test_run_id)
                         break
                     elif testRunStatus['state'] == "WAITING":
-                        print "[%s] The test run with id: %s is awaiting to be scheduled" % (time.strftime("%H:%M:%S"), test_run_id)
+                        print("[%s] The test run with id: %s is awaiting to be scheduled" % (time.strftime("%H:%M:%S"), test_run_id))
                         continue
                     elif testRunStatus['state'] == "RUNNING":
-                        print "[%s] The test run with id: %s is running" % (time.strftime("%H:%M:%S"), test_run_id)
+                        print("[%s] The test run with id: %s is running" % (time.strftime("%H:%M:%S"), test_run_id))
                         continue
 
-                print "Couldn't establish the state of the test run with id: %s. Aborting" % test_run_id
-                print testRunStatus
+                print("Couldn't establish the state of the test run with id: %s. Aborting" % test_run_id)
+                print(testRunStatus)
                 sys.exit(1)
 
 
@@ -585,7 +581,7 @@ class Testdroid:
     def print_project_test_runs(self, project_id, limit=0):
         test_runs = self.get_project_test_runs(project_id, limit)['data']
         for test_run in test_runs:
-            print "%s %s  %s %s" % (str(test_run['id']).ljust(10), ts_format(test_run['createTime']), test_run['displayName'].ljust(30), test_run['state'])
+            print("%s %s  %s %s" % (str(test_run['id']).ljust(10), ts_format(test_run['createTime']), test_run['displayName'].ljust(30), test_run['state']))
 
     """ Get a single test run
     """
@@ -647,7 +643,7 @@ class Testdroid:
                         url = "me/files/%s/file" % (file['id'])
                         prog = DownloadProgressBar()
                         self.download(url, full_path, callback=lambda pos, total: prog.update(int(pos), int(total)))
-                        print
+                        print("")
                     else:
                         logger.info("File %s is not ready" % file['name'])
                 if( len(files['data']) == 0 ):
@@ -683,25 +679,20 @@ class Testdroid:
                         url = "me/projects/%s/runs/%s/device-runs/%s/screenshots/%s" % (project_id, test_run['id'], device_run['id'], screenshot['id'])
                         prog = DownloadProgressBar()
                         self.download(url, full_path, callback=lambda pos, total: prog.update(int(pos), int(total)))
-                        print
+                        print("")
                     else:
                         ''' Earlier downloaded images are checked, and if needed re-downloaded.
                         '''
                         try:
-                            from PIL import Image
-                            im=Image.open(full_path)
-                            im.verify()
-                            logger.info("Screenshot %s already exists - skipping download" % full_path)
-                        except ImportError:
-                            if os.path.isfile(full_path):  # fallback if Pillow fails to import
+                            if imghdr.what(full_path) in ['jpeg', 'png']:
                                 logger.info("Screenshot %s already exists - skipping download" % full_path)
                             else:
-                                raise # jump to next block
+                                raise
                         except:
                             url = "me/projects/%s/runs/%s/device-runs/%s/screenshots/%s" % (project_id, test_run['id'], device_run['id'], screenshot['id'])
                             prog = DownloadProgressBar()
                             self.download(url, full_path, callback=lambda pos, total: prog.update(int(pos), int(total)))
-                            print
+                            print("")
 
                 if no_screenshots:
                     logger.info("Device %s has no screenshots - skipping" % device_run['device']['displayName'])
@@ -764,8 +755,10 @@ Commands:
                           help="Username - the email address. Optional. You can use environment variable TESTDROID_USERNAME as well.")
         parser.add_option("-p", "--password", dest="password",
                           help="Password. Required if username is used. You can use environment variable TESTDROID_PASSWORD as well.")
-        parser.add_option("-c", "--url", dest="url", default="https://cloud.testdroid.com",
-                          help="Cloud endpoint. Default is https://cloud.testdroid.com. You can use environment variable TESTDROID_URL as well.")
+        parser.add_option("-c", "--url", dest="url", default="https://cloud.bitbar.com",
+                          help="Cloud endpoint. Default is https://cloud.bitbar.com. You can use environment variable TESTDROID_URL as well.")
+        parser.add_option("-i", "--interval", dest="interval",
+                          help="How frequently the status of a test run should be checked (in minutes). Can be used with the command wait-test-run.")
         parser.add_option("-q", "--quiet", action="store_true", dest="quiet",
                           help="Quiet mode")
         parser.add_option("-d", "--debug", action="store_true", dest="debug",
@@ -778,7 +771,6 @@ Commands:
             "device-groups": self.print_device_groups,
             "available-free-devices": self.print_available_free_devices,
             "available-frameworks": self.print_available_frameworks,
-            "available-project-types": self.print_available_project_types,
             "projects": self.print_projects,
             "create-project": self.create_project,
             "delete-project": self.delete_project,
@@ -809,7 +801,7 @@ Commands:
 
         if options.debug:
             logger.setLevel(logging.DEBUG)
-            httplib.HTTPConnection.debuglevel = 1
+            http.client.HTTPConnection.debuglevel = 1
             logging.getLogger().setLevel(logging.DEBUG)
             requests_log = logging.getLogger("requests.packages.urllib3")
             requests_log.setLevel(logging.DEBUG)
@@ -822,18 +814,25 @@ Commands:
         password = options.password or os.environ.get('TESTDROID_PASSWORD')
         apikey = options.apikey or os.environ.get('TESTDROID_APIKEY')
         url = os.environ.get('TESTDROID_URL') or options.url
+        polling_interval_mins = 10
+
+        try:
+            polling_interval_mins = max(int(options.interval), 1)
+        except:
+            polling_interval_mins = 10
 
         self.set_username(username)
         self.set_password(password)
         self.set_apikey(apikey)
         self.set_url(url)
+        self.set_polling_interval_mins(polling_interval_mins)
 
         command = commands[args[0]]
         if not command:
             parser.print_help()
             sys.exit(1)
 
-        print command(*args[1:]) or ""
+        print(command(*args[1:]) or "")
         #print json.dumps(result, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
