@@ -11,7 +11,7 @@ else:
 from optparse import OptionParser
 from datetime import datetime
 
-__version__ = '2.42.0'
+__version__ = '2.42.1'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
