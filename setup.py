@@ -30,4 +30,8 @@ Testdroid API client for Python""",
                   'testdroid = testdroid:main',
               ],
           },
+      test_suite='testdroid.tests.test_all',
+      tests_require=[
+          'responses',
+      ],
       )
