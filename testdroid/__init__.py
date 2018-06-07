@@ -801,7 +801,10 @@ Commands:
 
         if options.debug:
             logger.setLevel(logging.DEBUG)
-            http.client.HTTPConnection.debuglevel = 1
+            if sys.version_info[0] > 2:
+                http.client.HTTPConnection.debuglevel = 1
+            else:
+                httplib.HTTPConnection.debuglevel = 1   
             logging.getLogger().setLevel(logging.DEBUG)
             requests_log = logging.getLogger("requests.packages.urllib3")
             requests_log.setLevel(logging.DEBUG)
