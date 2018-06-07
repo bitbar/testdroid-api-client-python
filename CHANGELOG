@@ -1,3 +1,6 @@
+2.42.1
+ * Use imghdr to verify downloaded images instead of pillow
+ * Make the polling interval of test runs customizable
 2.42.0
  * Support for Python 3.x
  * New method to launch test run using test run config (Requires: Testdroid v2.58 or higher)

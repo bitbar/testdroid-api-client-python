@@ -234,11 +234,14 @@ class Testdroid:
     """ Upload file to API resource
     """
     def upload(self, path=None, filename=None):
-        url = "%s/api/v2/%s" % (self.cloud_url, path)
-        files = {'file': open(filename, 'rb')}
-        res = requests.post(url, files=files, headers=self._build_headers())
-        if res.status_code not in list(range(200, 300)):
-            raise RequestResponseError(res.text, res.status_code)
+        # TOOD: where's the error handling?
+        with open(filename, 'rb') as f:
+            url = "%s/api/v2/%s" % (self.cloud_url, path)
+            files = {'file': f}
+            res = requests.post(url, files=files, headers=self._build_headers())
+            if res.status_code not in list(range(200, 300)):
+                raise RequestResponseError(res.text, res.status_code)
+            return res
 
     """ GET from API resource
     """
