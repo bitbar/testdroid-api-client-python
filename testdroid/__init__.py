@@ -11,7 +11,7 @@ else:
 from optparse import OptionParser
 from datetime import datetime
 
-__version__ = '2.42.1'
+__version__ = '2.42.2'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
@@ -81,7 +81,7 @@ class DownloadProgressBar:
         else:
             self.prog_bar += '                   '
         if sys.platform.lower().startswith('win'):
-            print(self +'\r')
+            print(str(self) + '\r')
         else:
             print(str(self) + chr(27) + '[A')
 
