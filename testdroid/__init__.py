@@ -591,6 +591,14 @@ class Testdroid:
     def get_test_run(self, project_id, test_run_id):
         return self.get("me/projects/%s/runs/%s" % (project_id, test_run_id))
 
+    """ Re-run an already-existing test run. Specify individual device run IDs to only re-run those devices.
+    """
+    def retry_test_run(self, project_id, test_run_id, device_run_ids=[]):
+        endpoint = "me/projects/%s/runs/%s/retry" % (project_id, test_run_id)
+        if device_run_ids:
+            endpoint += "?deviceRunIds[]=" + "&deviceRunIds[]=".join(str(device_id) for device_id in device_run_ids)
+        return self.post(endpoint)
+
     """Abort a test run
     """
     def abort_test_run(self, project_id, test_run_id):
