@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 import sys, os
 
 
-version = '2.42.1'
+version = '2.43.0'
 
 setup(name='testdroid',
       version=version,
@@ -30,4 +30,8 @@ Testdroid API client for Python""",
                   'testdroid = testdroid:main',
               ],
           },
+      test_suite='testdroid.tests.test_all',
+      tests_require=[
+          'responses',
+      ],
       )

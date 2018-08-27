@@ -11,7 +11,7 @@ else:
 from optparse import OptionParser
 from datetime import datetime
 
-__version__ = '2.42.1'
+__version__ = '2.43.0'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
@@ -81,7 +81,7 @@ class DownloadProgressBar:
         else:
             self.prog_bar += '                   '
         if sys.platform.lower().startswith('win'):
-            print(self +'\r')
+            print(str(self) + '\r')
         else:
             print(str(self) + chr(27) + '[A')
 
@@ -234,11 +234,14 @@ class Testdroid:
     """ Upload file to API resource
     """
     def upload(self, path=None, filename=None):
-        url = "%s/api/v2/%s" % (self.cloud_url, path)
-        files = {'file': open(filename, 'rb')}
-        res = requests.post(url, files=files, headers=self._build_headers())
-        if res.status_code not in list(range(200, 300)):
-            raise RequestResponseError(res.text, res.status_code)
+        # TOOD: where's the error handling?
+        with open(filename, 'rb') as f:
+            url = "%s/api/v2/%s" % (self.cloud_url, path)
+            files = {'file': f}
+            res = requests.post(url, files=files, headers=self._build_headers())
+            if res.status_code not in list(range(200, 300)):
+                raise RequestResponseError(res.text, res.status_code)
+            return res
 
     """ GET from API resource
     """
@@ -588,6 +591,14 @@ class Testdroid:
     def get_test_run(self, project_id, test_run_id):
         return self.get("me/projects/%s/runs/%s" % (project_id, test_run_id))
 
+    """ Re-run an already-existing test run. Specify individual device run IDs to only re-run those devices.
+    """
+    def retry_test_run(self, project_id, test_run_id, device_run_ids=[]):
+        endpoint = "me/projects/%s/runs/%s/retry" % (project_id, test_run_id)
+        if device_run_ids:
+            endpoint += "?deviceRunIds[]=" + "&deviceRunIds[]=".join(str(device_id) for device_id in device_run_ids)
+        return self.post(endpoint)
+
     """Abort a test run
     """
     def abort_test_run(self, project_id, test_run_id):
@@ -801,7 +812,10 @@ Commands:
 
         if options.debug:
             logger.setLevel(logging.DEBUG)
-            http.client.HTTPConnection.debuglevel = 1
+            if sys.version_info[0] > 2:
+                http.client.HTTPConnection.debuglevel = 1
+            else:
+                httplib.HTTPConnection.debuglevel = 1   
             logging.getLogger().setLevel(logging.DEBUG)
             requests_log = logging.getLogger("requests.packages.urllib3")
             requests_log.setLevel(logging.DEBUG)
