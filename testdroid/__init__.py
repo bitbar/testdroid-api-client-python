@@ -19,7 +19,6 @@ logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('testdroid')
 logger.setLevel(logging.INFO)
 
-
 class RequestTimeout(Exception):
 
     def __init__(self, msg):
@@ -241,6 +240,7 @@ class Testdroid:
             res = requests.post(url, files=files, headers=self._build_headers())
             if res.status_code not in list(range(200, 300)):
                 raise RequestResponseError(res.text, res.status_code)
+            print(res)
             return res
 
     """ GET from API resource
@@ -619,6 +619,102 @@ class Testdroid:
     def get_input_files(self, limit=0):
         return self.get("me/files?limit={}&filter=s_direction_eq_INPUT".format(limit))
 
+    """ Build API
+    """
+
+    """ Print projects
+    """
+    def print_jobs(self, limit=0):
+        for job in self.get_jobs(limit)['data']:
+            print("%s %s \"%s\"" % (str(job['id']).ljust(10), job['name'].ljust(15), job['content']))
+
+    """ Print builds
+    """
+    def print_builds(self, job_id, limit=0):
+        print("id    buildNumber  state      status     duration")
+        for build in self.get_builds(job_id, limit)['data']:
+            print("%s %s %s %s %s" % (str(build['id']).ljust(12), str(build['buildNumber']).ljust(5), build['state'].ljust(10), build['status'].ljust(10), build['duration']))
+
+    
+    
+    """ Get builds from the job
+    """
+    def get_builds(self, job_id, limit=0):
+        return self.get("me/jobs/{}/builds?limit={}".format(job_id,limit))
+
+    """ Get job by id
+    """
+    def get_job(self, job_id):
+        return self.get("me/jobs/{}".format(job_id))
+
+    """ Get build from the job
+    """
+    def get_build(self, job_id, build_id):
+        return self.get("me/jobs/{}/builds/{}".format(job_id, build_id))
+
+    """ Get jobs
+    """
+    def get_jobs(self, limit=0):
+        return self.get("me/jobs?limit={}".format(limit))
+
+    """ Create a job
+    """
+    def create_job(self, job_name, content, job_type="BUILD"):
+        job = self.post(path="me/jobs", payload={"name": job_name, "content": content, "type": job_type})
+        print(job)
+
+        logger.info("Job %s: %s (%s) created" % (job['id'], job['name'], job['type'] ))
+        return job
+
+    """ Create a build
+    """
+    def create_build(self, job_id, file_id=None):
+        build = self.post(path="me/jobs/{}/builds".format(job_id), payload={"fileId": file_id})
+        print(build)
+
+        logger.info("build %s: %s (%s) " % (build['id'], build['buildNumber'], build['state'] ))
+        return build
+
+    """ Update job
+    """
+    def update_job(self, job_id,job_name, content):
+        job = self.post(path="me/jobs/{}".format(job_id), payload={"name": job_name, "content": content})
+        print(job)
+
+        logger.info("Job %s: %s (%s) created" % (job['id'], job['name'], job['type'] ))
+        return job
+
+    """ Delete job
+    """
+    def delete_job(self, job_id):
+        return self.delete("me/jobs/{}".format(limit))
+
+    """ Delete build
+    """
+    def delete_build(self, job_id, build_id):
+        return self.delete("me/jobs/{}/builds/{}".format(job_id, build_id))
+
+    """ Get build output files
+    """
+    def download_build_output_files(self, job_id, build_id, results_folder="results", tags=None):
+        files = self.get("me/jobs/{}/builds/{}/output-file-set/files{}".format(job_id, build_id, "?tag[]=".format(tags) if tags else "" ))
+        for file in files['data']:
+            if file['state'] == "READY":
+                full_path = "%s/%s" % (results_folder, file['name'])
+                if not os.path.exists(results_folder):
+                    os.makedirs(results_folder)
+
+                url = "me/files/%s/file" % (file['id'])
+                prog = DownloadProgressBar()
+                self.download(url, full_path, callback=lambda pos, total: prog.update(int(pos), int(total)))
+                print("")
+            else:
+                logger.info("File %s is not ready" % file['name'])
+            if( len(files['data']) == 0 ):
+                logger.info("No files to download")
+                logger.info("")
+
+
     """ Downloads test run files to a directory hierarchy
     """
     def download_test_run(self, project_id, test_run_id):
@@ -791,7 +887,15 @@ Commands:
             "device-run-files": self.get_device_run_files,
             "list-input-files": self.print_input_files,
             "download-test-run": self.download_test_run,
-            "download-test-screenshots": self.download_test_screenshots
+            "jobs": self.print_jobs,
+            "builds": self.print_builds,
+            "create-job": self.create_job,
+            "update-job": self.update_job,
+            "create-build": self.create_build,
+            "delete-job": self.delete_job,
+            "delete-build": self.delete_build,
+            "download-builds-files": self.download_build_output_files
+
         }
         return commands
 
