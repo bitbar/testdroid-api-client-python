@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from unittest import TestCase
-import io
-import sys
 import os
 
 import testdroid

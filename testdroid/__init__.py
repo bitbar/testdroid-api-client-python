@@ -11,7 +11,7 @@ else:
 from optparse import OptionParser
 from datetime import datetime
 
-__version__ = '2.42.1'
+__version__ = '2.43.1'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
@@ -80,7 +80,7 @@ class DownloadProgressBar:
         else:
             self.prog_bar += '                   '
         if sys.platform.lower().startswith('win'):
-            print(self +'\r')
+            print(str(self) + '\r')
         else:
             print(str(self) + chr(27) + '[A')
 
@@ -240,7 +240,6 @@ class Testdroid:
             res = requests.post(url, files=files, headers=self._build_headers())
             if res.status_code not in list(range(200, 300)):
                 raise RequestResponseError(res.text, res.status_code)
-            print(res)
             return res
 
     """ GET from API resource
@@ -398,6 +397,14 @@ class Testdroid:
         me = self.get_me()
         path = "users/%s/projects/%s/files/application" % (me['id'], project_id)
         self.upload(path=path, filename=filename)
+
+    """ Upload application file to project
+    """
+    def upload_file(self, filename):
+        me = self.get_me()
+        path = "users/%s/files" % (me['id'])
+        res = self.upload(path=path, filename=filename).json()
+        print("ID:%s Name:%s Size:%s" % (str(res['id']).ljust(10), res['name'].ljust(15), res['size']))
 
     """ Upload test file to project
     """
@@ -591,6 +598,14 @@ class Testdroid:
     def get_test_run(self, project_id, test_run_id):
         return self.get("me/projects/%s/runs/%s" % (project_id, test_run_id))
 
+    """ Re-run an already-existing test run. Specify individual device run IDs to only re-run those devices.
+    """
+    def retry_test_run(self, project_id, test_run_id, device_run_ids=[]):
+        endpoint = "me/projects/%s/runs/%s/retry" % (project_id, test_run_id)
+        if device_run_ids:
+            endpoint += "?deviceRunIds[]=" + "&deviceRunIds[]=".join(str(device_id) for device_id in device_run_ids)
+        return self.post(endpoint)
+
     """Abort a test run
     """
     def abort_test_run(self, project_id, test_run_id):
@@ -667,19 +682,37 @@ class Testdroid:
         return job
 
     """ Create a build
-    """
-    def create_build(self, job_id, file_id=None):
-        build = self.post(path="me/jobs/{}/builds".format(job_id), payload={"fileId": file_id})
-        print(build)
+    build_config:
+     fileId: int
+     executorId: int
+     configuration: String
+     resultsConfig: [resultsConfig]
 
+     resultsConfig:
+                    sourceName
+                    destinationName
+                    isDirectory
+                    fileUrlEnvVariable
+
+    usage: client.create_build(job_id, json.dumps({"fileId":123213...))                
+    """
+    def create_build(self, job_id, build_config={}):
+        build = self.post(path="me/jobs/{}/builds".format(job_id), payload=build_config, headers={'Content-type': 'application/json', 'Accept': 'application/json'})
         logger.info("build %s: %s (%s) " % (build['id'], build['buildNumber'], build['state'] ))
         return build
 
     """ Update job
     """
+    def upload_job(self, job_id,job_name, content):
+        job = self.post(path="me/jobs/{}".format(job_id), payload={"name": job_name, "content": content})
+
+        logger.info("Job %s: %s (%s) created" % (job['id'], job['name'], job['type'] ))
+        return job
+
+    """ Update job
+    """
     def update_job(self, job_id,job_name, content):
         job = self.post(path="me/jobs/{}".format(job_id), payload={"name": job_name, "content": content})
-        print(job)
 
         logger.info("Job %s: %s (%s) created" % (job['id'], job['name'], job['type'] ))
         return job
@@ -687,7 +720,7 @@ class Testdroid:
     """ Delete job
     """
     def delete_job(self, job_id):
-        return self.delete("me/jobs/{}".format(limit))
+        return self.delete("me/jobs/{}".format(job_id))
 
     """ Delete build
     """
@@ -824,6 +857,7 @@ Commands:
     upload-application <project-id> <filename>  Upload application to project
     upload-test <project-id> <filename>         Upload test file to project
     upload-data <project-id> <filename>         Upload additional data file to project
+    upload-file <filename>                      Upload to "Files"
     set-project-config <project-id> <config-json>
                                                 Change the project config parameters as facilitated by the API:
                                                 http://docs.testdroid.com/_pages/client.html#project-config
@@ -876,6 +910,7 @@ Commands:
             "upload-application": self.upload_application_file,
             "upload-test": self.upload_test_file,
             "upload-data": self.upload_data_file,
+            "upload-file": self.upload_file,
             "set-project-config": self.set_project_config,
             "start-test-run": self.start_test_run,
             "start-test-run-using-config": self.start_test_run_using_config,
