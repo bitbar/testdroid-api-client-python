@@ -11,14 +11,13 @@ else:
 from optparse import OptionParser
 from datetime import datetime
 
-__version__ = '2.43.0'
+__version__ = '2.43.1'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
 
 logger = logging.getLogger('testdroid')
 logger.setLevel(logging.INFO)
-
 
 class RequestTimeout(Exception):
 
@@ -399,6 +398,14 @@ class Testdroid:
         path = "users/%s/projects/%s/files/application" % (me['id'], project_id)
         self.upload(path=path, filename=filename)
 
+    """ Upload application file to project
+    """
+    def upload_file(self, filename):
+        me = self.get_me()
+        path = "users/%s/files" % (me['id'])
+        res = self.upload(path=path, filename=filename).json()
+        print("ID:%s Name:%s Size:%s" % (str(res['id']).ljust(10), res['name'].ljust(15), res['size']))
+
     """ Upload test file to project
     """
     def upload_test_file(self, project_id, filename):
@@ -627,6 +634,120 @@ class Testdroid:
     def get_input_files(self, limit=0):
         return self.get("me/files?limit={}&filter=s_direction_eq_INPUT".format(limit))
 
+    """ Build API
+    """
+
+    """ Print projects
+    """
+    def print_jobs(self, limit=0):
+        for job in self.get_jobs(limit)['data']:
+            print("%s %s \"%s\"" % (str(job['id']).ljust(10), job['name'].ljust(15), job['content']))
+
+    """ Print builds
+    """
+    def print_builds(self, job_id, limit=0):
+        print("id    buildNumber  state      status     duration")
+        for build in self.get_builds(job_id, limit)['data']:
+            print("%s %s %s %s %s" % (str(build['id']).ljust(12), str(build['buildNumber']).ljust(5), build['state'].ljust(10), build['status'].ljust(10), build['duration']))
+
+    
+    
+    """ Get builds from the job
+    """
+    def get_builds(self, job_id, limit=0):
+        return self.get("me/jobs/{}/builds?limit={}".format(job_id,limit))
+
+    """ Get job by id
+    """
+    def get_job(self, job_id):
+        return self.get("me/jobs/{}".format(job_id))
+
+    """ Get build from the job
+    """
+    def get_build(self, job_id, build_id):
+        return self.get("me/jobs/{}/builds/{}".format(job_id, build_id))
+
+    """ Get jobs
+    """
+    def get_jobs(self, limit=0):
+        return self.get("me/jobs?limit={}".format(limit))
+
+    """ Create a job
+    """
+    def create_job(self, job_name, content, job_type="BUILD"):
+        job = self.post(path="me/jobs", payload={"name": job_name, "content": content, "type": job_type})
+        print(job)
+
+        logger.info("Job %s: %s (%s) created" % (job['id'], job['name'], job['type'] ))
+        return job
+
+    """ Create a build
+    build_config:
+     fileId: int
+     executorId: int
+     configuration: String
+     resultsConfig: [resultsConfig]
+
+     resultsConfig:
+                    sourceName
+                    destinationName
+                    isDirectory
+                    fileUrlEnvVariable
+
+    usage: client.create_build(job_id, json.dumps({"fileId":123213...))                
+    """
+    def create_build(self, job_id, build_config={}):
+        build = self.post(path="me/jobs/{}/builds".format(job_id), payload=build_config, headers={'Content-type': 'application/json', 'Accept': 'application/json'})
+        logger.info("build %s: %s (%s) " % (build['id'], build['buildNumber'], build['state'] ))
+        return build
+
+    """ Update job
+    """
+    def upload_job(self, job_id,job_name, content):
+        job = self.post(path="me/jobs/{}".format(job_id), payload={"name": job_name, "content": content})
+
+        logger.info("Job %s: %s (%s) created" % (job['id'], job['name'], job['type'] ))
+        return job
+
+    """ Update job
+    """
+    def update_job(self, job_id,job_name, content):
+        job = self.post(path="me/jobs/{}".format(job_id), payload={"name": job_name, "content": content})
+
+        logger.info("Job %s: %s (%s) created" % (job['id'], job['name'], job['type'] ))
+        return job
+
+    """ Delete job
+    """
+    def delete_job(self, job_id):
+        return self.delete("me/jobs/{}".format(job_id))
+
+    """ Delete build
+    """
+    def delete_build(self, job_id, build_id):
+        return self.delete("me/jobs/{}/builds/{}".format(job_id, build_id))
+
+    """ Get build output files
+    """
+    def download_build_output_files(self, job_id, build_id, results_folder="results", tags=None):
+        files = self.get("me/jobs/{}/builds/{}/output-file-set/files{}".format(job_id, build_id, "?tag[]=".format(tags) if tags else "" ))
+        for file in files['data']:
+            if file['state'] == "READY":
+                full_path = "%s/%s" % (results_folder, file['name'])
+                if not os.path.exists(results_folder):
+                    os.makedirs(results_folder)
+
+                url = "me/files/%s/file" % (file['id'])
+                prog = DownloadProgressBar()
+                self.download(url, full_path, callback=lambda pos, total: prog.update(int(pos), int(total)))
+                print("")
+            else:
+                logger.info("File %s is not ready" % file['name'])
+            if( len(files['data']) == 0 ):
+                logger.info("No files to download")
+                logger.info("")
+
+
     """ Downloads test run files to a directory hierarchy
     """
     def download_test_run(self, project_id, test_run_id):
@@ -736,6 +857,7 @@ Commands:
     upload-application <project-id> <filename>  Upload application to project
     upload-test <project-id> <filename>         Upload test file to project
     upload-data <project-id> <filename>         Upload additional data file to project
+    upload-file <filename>                      Upload to "Files"
     set-project-config <project-id> <config-json>
                                                 Change the project config parameters as facilitated by the API:
                                                 http://docs.testdroid.com/_pages/client.html#project-config
@@ -788,6 +910,7 @@ Commands:
             "upload-application": self.upload_application_file,
             "upload-test": self.upload_test_file,
             "upload-data": self.upload_data_file,
+            "upload-file": self.upload_file,
             "set-project-config": self.set_project_config,
             "start-test-run": self.start_test_run,
             "start-test-run-using-config": self.start_test_run_using_config,
@@ -799,7 +922,15 @@ Commands:
             "device-run-files": self.get_device_run_files,
             "list-input-files": self.print_input_files,
             "download-test-run": self.download_test_run,
-            "download-test-screenshots": self.download_test_screenshots
+            "jobs": self.print_jobs,
+            "builds": self.print_builds,
+            "create-job": self.create_job,
+            "update-job": self.update_job,
+            "create-build": self.create_build,
+            "delete-job": self.delete_job,
+            "delete-build": self.delete_build,
+            "download-builds-files": self.download_build_output_files
+
         }
         return commands
 
