@@ -1,3 +1,5 @@
+2.60.0
+ * Added Build API functions
 2.43.0
  * Add function for restarting test runs and device runs
  * Travis builds
