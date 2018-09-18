@@ -676,8 +676,6 @@ class Testdroid:
     """
     def create_job(self, job_name, content, job_type="BUILD"):
         job = self.post(path="me/jobs", payload={"name": job_name, "content": content, "type": job_type})
-        print(job)
-
         logger.info("Job %s: %s (%s) created" % (job['id'], job['name'], job['type'] ))
         return job
 
@@ -747,6 +745,34 @@ class Testdroid:
                 logger.info("No files to download")
                 logger.info("")
 
+    """ Awaits completion of the given test run
+    """
+    def wait_build(self, job_id, build_id):
+        if job_id and build_id:
+            print("Awaiting completion of build with id {}. Will wait forever polling every {}.".format(
+                build_id,
+                '{} minutes'.format(self.polling_interval_mins) if self.polling_interval_mins != 1 else 'minute'))
+
+            while True:
+                time.sleep(self.polling_interval_mins * 6)
+                if not self.api_key:
+                    self.access_token = None    
+                    self.get_token()
+                buildStatus = self.get_build(job_id, build_id)
+                if buildStatus and 'state' in buildStatus:
+                    if buildStatus['state'] == "FINISHED":
+                        print("The build with id: %s has FINISHED with status: %s" % (build_id, buildStatus['status']))
+                        break
+                    elif buildStatus['state'] == "CREATED":
+                        print("[%s] The build with id: %s is awaiting to be scheduled" % (time.strftime("%H:%M:%S"), build_id))
+                        continue
+                    elif buildStatus['state'] == "BUILDING":
+                        print("[%s] The build with id: %s is running" % (time.strftime("%H:%M:%S"), build_id))
+                        continue
+
+                print("Couldn't establish the state of the build with id: %s. Aborting" % build_id)
+                print(buildStatus)
+                sys.exit(1)
 
     """ Downloads test run files to a directory hierarchy
     """
@@ -879,6 +905,18 @@ Commands:
                                                 Download test run screenshots. Screenshots will be downloaded to
                                                 current directory in a structure:
                                                 [test-run-id]/[device-run-id]-[device-name]/screenshots/...
+    jobs                                        Get list of your jobs 
+    builds <job-id>                             Get list of your builds 
+    create-job <job-name> <job-configuration>   Create a new job. Job configuration in Jenkins pipeline format
+                                                See the sample of Jenkisfile in http://docs.bitbar.com/build-service/guide.html
+    update-job <job-id> <job-name> <job-configuration> 
+                                                Update existing job
+    create-build <job-id> <build-configuration> Create a new build job. See https://cloud.testdroid.com/cloud/swagger-ui.html
+                                                for details of build configuration
+    delete-job <job-id>                         Delete job and all the builds in it
+    delete-build <job-id> <build-id>            Delete build by id
+    download-builds-files <job-id> <build-id>   Download all the results of the specific build
+    wait-build <job-id> <build-id>              Await completion (polling) of the build
 
 """
         parser = MyParser(usage=usage, description=description, epilog=epilog,  version="%s %s" % ("%prog", __version__))
@@ -929,7 +967,8 @@ Commands:
             "create-build": self.create_build,
             "delete-job": self.delete_job,
             "delete-build": self.delete_build,
-            "download-builds-files": self.download_build_output_files
+            "download-builds-files": self.download_build_output_files,
+            "wait-build": self.wait_build
 
         }
         return commands
