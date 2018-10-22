@@ -438,7 +438,7 @@ class Testdroid:
     def set_project_parameters(self, project_id, parameters):
         #set key value pair for project. e.g. : {'key' : 'my_key', 'value':'my_value'}
         me = self.get_me()
-        path = "/users/%s/projects/%s/config/parameters" % ( me['id'], project_id )
+        path = "users/%s/projects/%s/config/parameters" % ( me['id'], project_id )
         return self.post(path=path, payload=parameters)
 
     """ Get project config
@@ -455,7 +455,7 @@ class Testdroid:
         if isinstance(payload, str):
             payload=json.loads(payload)
         me = self.get_me()
-        path = "/users/%s/projects/%s/config" % ( me['id'], project_id )
+        path = "users/%s/projects/%s/config" % ( me['id'], project_id )
         return self.post(path=path, payload=payload)
 
     """Set project framework based on a framework integer id
@@ -514,7 +514,7 @@ class Testdroid:
 
         # actually start the test run
         me = self.get_me()
-        path = "/users/%s/projects/%s/runs" % (me['id'], project_id)
+        path = "users/%s/projects/%s/runs" % (me['id'], project_id)
         test_run = self.post(path=path, payload=payload)
         print("Test run id: %s" % test_run['id'])
         print("Name: %s" % test_run['displayName'])
