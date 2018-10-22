@@ -167,7 +167,7 @@ class TestNetworking(TestCase):
 
     @responses.activate
     def test_get_device_run_files_with_tags(self):
-        url = '{}/projects/{}/runs/{}/device-sessions/{}/output-file-set/files?tag[]?={}'.format(
+        url = '{}/projects/{}/runs/{}/device-sessions/{}/output-file-set/files?tag[]={}'.format(
             URL_API_ME, PROJECT_ID, TEST_RUN_ID, DEVICE_SESSION_ID, TAGS)
         responses.add(responses.GET, url, json=JSON, status=200)
         response = t.get_device_run_files(PROJECT_ID, TEST_RUN_ID,
