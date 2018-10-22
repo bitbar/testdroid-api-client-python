@@ -417,7 +417,7 @@ class Testdroid:
     """
     def delete_project_parameters(self, project_id, parameter_id):
         me = self.get_me()
-        path = "/users/%s/projects/%s/config/parameters/%s" % ( me['id'], project_id, parameter_id )
+        path = "users/%s/projects/%s/config/parameters/%s" % ( me['id'], project_id, parameter_id )
         return self.delete(path=path)
 
     """ Get project parameters
