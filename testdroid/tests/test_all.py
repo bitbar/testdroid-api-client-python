@@ -6,17 +6,22 @@ import os
 import testdroid
 import responses
 
-URL_BASE = 'https://cloud.bitbar.com'
-URL_API = '{}/api/v2'.format(URL_BASE)
-URL_API_ME = '{}/me'.format(URL_API)
-URL_USERS = '{}/users'.format(URL_BASE)
 JSON = {'k': 'v'}
 PROJECT_ID = 2
 TEST_RUN_ID = 3
 DEVICE_RUN_ID = 4
 DEVICE_SESSION_ID = 5
+DEVICE_GROUP_ID = 6
+USER_ID = 7
+PARAM_ID = 8
 TAGS = 'tags'
 LIMIT = 0
+
+
+URL_BASE = 'https://cloud.bitbar.com'
+URL_API = '{}/api/v2'.format(URL_BASE)
+URL_API_ME = '{}/me'.format(URL_API)
+URL_USERS = '{}/users/{}'.format(URL_API,USER_ID)
 
 t = testdroid.Testdroid()
 
@@ -180,3 +185,40 @@ class TestNetworking(TestCase):
             URL_API_ME, LIMIT)
         responses.add(responses.GET, url, json=JSON, status=200)
         self.assertEqual(t.get_input_files(LIMIT), JSON)
+
+    @responses.activate
+    def test_start_test_run(self):
+        url = '{}/projects/2'.format(
+            URL_API_ME)
+        json = {
+            'id': USER_ID,
+            'name': 'Sample project',
+        }
+        responses.add(responses.GET, url, json=json, status=200)
+
+        responses.add(responses.GET, URL_API_ME, json=json, status=200)
+        url = '{}/projects/{}/runs'.format(
+            URL_USERS, PROJECT_ID)
+        json = {
+            'id': 12,
+            'displayName': "My test run"
+        }
+
+
+        responses.add(responses.POST, url, json=json, status=201)
+        self.assertEqual(t.start_test_run(PROJECT_ID, DEVICE_GROUP_ID), json['id'])  
+
+    @responses.activate
+    def test_delete_project_parameters(self):
+        path = 'projects/{}/config/parameters/{}'.format(PROJECT_ID, PARAM_ID)
+        url = '{}/{}'.format(URL_USERS, path)
+
+        json = {
+            'id': USER_ID
+        }
+        responses.add(responses.GET, URL_API_ME, json=json, status=200)
+        responses.add(responses.DELETE, url, json=JSON, status=204)
+        response = t.delete_project_parameters(PROJECT_ID, PARAM_ID)
+        self.assertEqual(response.status_code, 204)
+
+      
