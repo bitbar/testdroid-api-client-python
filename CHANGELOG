@@ -1,3 +1,6 @@
+2.61.0
+ * Fix error with double slash for some API calls
+ * Added new test methods
 2.60.0
  * Added Build API functions
 2.43.0
