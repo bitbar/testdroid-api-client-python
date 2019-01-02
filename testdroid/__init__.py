@@ -32,10 +32,10 @@ class ConnectionError(Exception):
 class RequestResponseError(Exception):
 
     def __init__(self, msg, status_code):
-        super(Exception, self).__init__("Request Error: code %s: %s" % 
+        super(Exception, self).__init__("Request Error: code %s: %s" %
                                          (status_code, msg) )
         self.status_code = status_code
-    
+
 
 """ Format unix timestamp to human readable. Automatically detects timestamps with seconds or milliseconds.
 """
@@ -324,7 +324,7 @@ class Testdroid:
             if device['creditsPrice'] == 0 and device['locked'] == False and device['osType'] == "ANDROID":
                     print(device['displayName'])
         print("")
-    
+
     """ Print available frameworks
     """
     def print_available_frameworks(self, os_type=None, limit=0):
@@ -387,7 +387,7 @@ class Testdroid:
     def print_projects(self, limit=0):
         me = self.get_me()
         print("Projects for %s <%s>:" % (me['name'], me['email']))
-        
+
         for project in self.get_projects(limit)['data']:
             print("%s %s \"%s\"" % (str(project['id']).ljust(10), project['type'].ljust(15), project['name']))
 
@@ -468,9 +468,9 @@ class Testdroid:
 
 
     """ Start a test run using test run config
-        e.g '{"frameworkId":12252, 
-        "osType": "ANDROID", 
-        "projectId":1234, 
+        e.g '{"frameworkId":12252,
+        "osType": "ANDROID",
+        "projectId":1234,
         "files":[{"id":9876}, {"id":5432}]
         "testRunParameters":[{"key":"xyz", "value":"abc"}],
         "deviceGroupId":6854
@@ -629,7 +629,7 @@ class Testdroid:
         else:
             return self.get("me/projects/%s/runs/%s/device-sessions/%s/output-file-set/files?tag[]=%s" % (project_id, test_run_id, device_session_id, tags))
 
-    """ Get list of input files 
+    """ Get list of input files
     """
     def get_input_files(self, limit=0):
         return self.get("me/files?limit={}&filter=s_direction_eq_INPUT".format(limit))
@@ -650,8 +650,8 @@ class Testdroid:
         for build in self.get_builds(job_id, limit)['data']:
             print("%s %s %s %s %s" % (str(build['id']).ljust(12), str(build['buildNumber']).ljust(5), build['state'].ljust(10), build['status'].ljust(10), build['duration']))
 
-    
-    
+
+
     """ Get builds from the job
     """
     def get_builds(self, job_id, limit=0):
@@ -692,14 +692,14 @@ class Testdroid:
                     isDirectory
                     fileUrlEnvVariable
 
-    usage: client.create_build(job_id, json.dumps({"fileId":123213...))                
+    usage: client.create_build(job_id, json.dumps({"fileId":123213...))
     """
     def create_build(self, job_id, build_config={}):
         build = self.post(path="me/jobs/{}/builds".format(job_id), payload=build_config, headers={'Content-type': 'application/json', 'Accept': 'application/json'})
         logger.info("build %s: %s (%s) " % (build['id'], build['buildNumber'], build['state'] ))
         return build
 
-    """ Update job
+    """ Upload job
     """
     def upload_job(self, job_id,job_name, content):
         job = self.post(path="me/jobs/{}".format(job_id), payload={"name": job_name, "content": content})
@@ -756,7 +756,7 @@ class Testdroid:
             while True:
                 time.sleep(self.polling_interval_mins * 6)
                 if not self.api_key:
-                    self.access_token = None    
+                    self.access_token = None
                     self.get_token()
                 buildStatus = self.get_build(job_id, build_id)
                 if buildStatus and 'state' in buildStatus:
@@ -857,6 +857,91 @@ class Testdroid:
             else:
                 logger.info("Device %s has errored or has not finished - skipping" % device_run['device']['displayName'])
 
+    """ Get access groups
+    """
+    def get_access_groups(self):
+        return self.get("me/access-groups")
+
+    """ Get access group by id
+    """
+    def get_access_group(self, access_group_id):
+        return self.get("me/access-groups/{}".format(access_group_id))
+
+    """ Create access group
+    """
+    def create_access_group(self, access_group_name, access_group_scope="USER"):
+        group = self.post(path="me/access-groups", payload={"name": access_group_name, "scope": access_group_scope})
+        return group
+
+    """ Update access group
+    """
+    def update_access_group(self, access_group_id, access_group_name, access_group_scope):
+        # TODO: what if group_name or group_scope aren't provided??
+        group = self.post(path="me/access-groups/{}".format(access_group_id), payload={"name": access_group_name, "scope": access_group_scope})
+        return group
+
+    """ Delete access group
+    """
+    def delete_access_group(self, access_group_id):
+        # TODO: what if group_name or group_scope aren't provided??
+        return self.delete(path="me/access-groups/{}".format(access_group_id))
+
+    """ Get access group resources by id
+    """
+    def get_access_group_resources(self, access_group_id):
+        return self.get("me/access-groups/{}/resources".format(access_group_id))
+
+    """ Get resource from access group
+    """
+    def get_access_group_resource(self, access_group_id, resource_id):
+        return self.get("ame/ccess-groups/{}/resources/{}".format(access_group_id, resource_id))
+
+    """ Delete resource from access group
+    """
+    def delete_access_group_resource(self, access_group_id, resource_id):
+        return self.delete("me/access-groups/{}/resources/{}".format(access_group_id, resource_id))
+
+    """ Get access group users
+    """
+    def get_access_group_users(self, access_group_id):
+        return self.get("me/access-groups/{}/users".format(access_group_id))
+
+    """ Add user to access group
+    """
+    def add_access_group_user(self, access_group_id, email):
+        return self.post("me/access-groups/{}/users".format(access_group_id), payload={"email": email})
+
+    """ Get user from access group
+    """
+    def get_access_group_user(self, access_group_id, user_id):
+        return self.get("me/access-groups/{}/users/{}".format(access_group_id, user_id))
+
+    """ Delete user from access group
+    """
+    def delete_access_group_user(self, access_group_id, user_id):
+        return self.delete("me/access-groups/{}/users/{}".format(access_group_id, user_id))
+
+    """ Share device group with access group
+    """
+    def share_device_group(self, device_group_id, access_group_id):
+        return self.post("me/device-groups/{}/share".format(device_group_id), payload={"accessGroupId": access_group_id})
+
+    """ Share file set with access group
+    """
+    def share_file_set(self, file_set_id, access_group_id):
+        return self.post("me/file-sets/{}/share".format(file_set_id), payload={"accessGroupId": access_group_id})
+
+    """ Share file with access group
+    """
+    def share_file(self, file_id, access_group_id):
+        return self.post("me/files/{}/share".format(file_id), payload={"accessGroupId": access_group_id})
+
+    """ Share project with access group
+    """
+    def share_project(self, project_id, access_group_id):
+        return self.post("me/projects/{}/share".format(project_id), payload={"accessGroupId": access_group_id})
+
+
     def get_parser(self):
         class MyParser(OptionParser):
             def format_epilog(self, formatter):
@@ -905,11 +990,11 @@ Commands:
                                                 Download test run screenshots. Screenshots will be downloaded to
                                                 current directory in a structure:
                                                 [test-run-id]/[device-run-id]-[device-name]/screenshots/...
-    jobs                                        Get list of your jobs 
-    builds <job-id>                             Get list of your builds 
+    jobs                                        Get list of your jobs
+    builds <job-id>                             Get list of your builds
     create-job <job-name> <job-configuration>   Create a new job. Job configuration in Jenkins pipeline format
                                                 See the sample of Jenkisfile in http://docs.bitbar.com/build-service/guide.html
-    update-job <job-id> <job-name> <job-configuration> 
+    update-job <job-id> <job-name> <job-configuration>
                                                 Update existing job
     create-build <job-id> <build-configuration> Create a new build job. See https://cloud.testdroid.com/cloud/swagger-ui.html
                                                 for details of build configuration
@@ -918,6 +1003,32 @@ Commands:
     download-builds-files <job-id> <build-id>   Download all the results of the specific build
     wait-build <job-id> <build-id>              Await completion (polling) of the build
 
+    access-groups                               Get access groups
+    access-group <access-group-id>              Get an access group by id
+    access-group-create <name> <scope>          Create a new access group
+    access-group-update <access-group-id> <name> <scope>
+                                                Update an access group
+    access-group-delete <access-group-id>       Delete an access group
+    access-group-resources <access-group-id>    Get resources in an access group
+    access-group-resource <access-group-id> <resource-id>
+                                                Get a resource in an access group by id
+    access-group-resource-remove <access-group-id> <resource-id>
+                                                Remove a resource from an access group
+    access-group-users <access-group-id>        Get users in an access group
+    access-group-users-get <access-group-id> <user-id>
+                                                Get a user in an access group
+    access-group-users-add <access-group-id> <user-email>
+                                                Add a user to an access group
+    access-group-users-remove <access-group-id> <user-email>
+                                                Remove a user from an access group
+
+    share-device-group <device-group-id> <access-group-id>
+                                                Share a device group with an access group
+    share-file-set <file-set-id> <access-group-id>
+                                                Share a file set with an access group
+    share-file <file-id> <access-group-id>      Share a file with an access group
+    share-project <project-id> <access-group-id>
+                                                Share a project with an access group
 """
         parser = MyParser(usage=usage, description=description, epilog=epilog,  version="%s %s" % ("%prog", __version__))
         parser.add_option("-k", "--apikey", dest="apikey",
@@ -937,7 +1048,7 @@ Commands:
         return parser
 
     def get_commands(self):
-        commands = {
+        return {
             "me": self.get_me,
             "device-groups": self.print_device_groups,
             "available-free-devices": self.print_available_free_devices,
@@ -968,10 +1079,24 @@ Commands:
             "delete-job": self.delete_job,
             "delete-build": self.delete_build,
             "download-builds-files": self.download_build_output_files,
-            "wait-build": self.wait_build
-
+            "wait-build": self.wait_build,
+            "access-groups": self.get_access_groups,
+            "access-group": self.get_access_group,
+            "access-group-create": self.create_access_group,
+            "access-group-update": self.update_access_group,
+            "access-group-delete": self.delete_access_group,
+            "access-group-resources": self.get_access_group_resources,
+            "access-group-resource": self.get_access_group_resource,
+            "access-group-resource-remove": self.delete_access_group_resource,
+            "access-group-users": self.get_access_group_users,
+            "access-group-users-add": self.add_access_group_user,
+            "access-group-users-get": self.get_access_group_user,
+            "access-group-users-remove": self.delete_access_group_user,
+            "share-device-group": self.share_device_group,
+            "share-file-set": self.share_file_set,
+            "share-file": self.share_file,
+            "share-project": self.share_project,
         }
-        return commands
 
     def cli(self, parser, commands):
         (options, args) = parser.parse_args()
@@ -985,7 +1110,7 @@ Commands:
             if sys.version_info[0] > 2:
                 http.client.HTTPConnection.debuglevel = 1
             else:
-                httplib.HTTPConnection.debuglevel = 1   
+                httplib.HTTPConnection.debuglevel = 1
             logging.getLogger().setLevel(logging.DEBUG)
             requests_log = logging.getLogger("requests.packages.urllib3")
             requests_log.setLevel(logging.DEBUG)
