@@ -4,7 +4,6 @@ python:
   - '3.4'
   - '3.5'
   - '3.6'
-  - 'pypy3.5'
 install:
   - python setup.py clean
   - python setup.py sdist
@@ -12,9 +11,9 @@ script:
   - python setup.py test
 deploy:
   provider: pypi
-  user: info-bitbar
+  user: 'info-bitbar'
   password:
-    secure: KIrmFjMsrEPMutbCQ1peWaOuTxzLVBY7Yy6+KpzkB8UC7hiR9Vqyx6Rfm0DX3N7C1r0wMP1zwo5/HqoV83vpD5x1b0PDFyey72Wj6qLOvcJKYnxJLtOS+KBX1WmDTOwZzvegsN2K3U+u0054lJ1VhIrgkJUwucpYZav6mAs0h7rTG73B36ZlNhfeHEYfBQ4H8NwZin4zDnq6auJOw4tHsPPoqHv7XSyVGRJXsMPXV4Xosu4yNEUdfyKQ/iJPE68DFRqiI8IIKjvxybu+VCupT9DOUCIYnGhjNcMdUV1HajZm9sp3zopCAlfqhsT+aKZSLs0NV8g0alXkw5FYfZTVOyjwM+vjyX/WSLtJEZvAPB8kTQGRCDMVwvbQGVnybRqRvBAbWxDqYOK0LYJENHAPa0ZaoA5yJYV3iwVkvq+V/qWN5+IMtNCWhDoucBBu4FOvEyVB85SZzSopXyhIA7MToX9tLoawuMH/UVoSoWYKay8PTTq3ARPprnQ5Lxw0IAqYmS5eefbmPW5Ie0KlPmtyAmHmfrdDaAJWa1FxE9SrSqtTZwYzy+cAKivXgHa6i8RJouDilt5HGSI/rpCFiDk8YvtR9VR47uDW4JXt6syvOEHpBwykQ1s9eu33swCnqUmK9wO2sTpQ4odQW1lwFZWlHfbMcjVaslQv3sIzgafbrfs=
+    secure: YIvWzNQAUsnxUNQGtGBKAdA9qJBCoaxVudbmO68OCQJ8x4iseNH321tUCihO3ZVeEkyduXEHIK85Club0CEgLvANoGnAOeLPWs+xCljagPBwjtjM7BAtIpojOCCd69OhZfF8pYuUNHL1Ja6NmwoNXSLwhDpTDJVQp0v+dOVAjJg=
   on:
     tags: true
   skip_existing: true
