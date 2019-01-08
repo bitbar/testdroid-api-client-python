@@ -1,3 +1,4 @@
+[![PyPI version](https://badge.fury.io/py/testdroid.svg)](https://badge.fury.io/py/testdroid)
 [![Build Status](https://travis-ci.org/bitbar/testdroid-api-client-python.svg?branch=devel)](https://travis-ci.org/bitbar/testdroid-api-client-python)
 
 Python client for Testdroid Cloud APIv2
