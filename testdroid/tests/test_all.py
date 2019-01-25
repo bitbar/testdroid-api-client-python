@@ -69,7 +69,7 @@ class TestNetworking(TestCase):
         url = '{}/{}'.format(URL_API, path)
         responses.add(responses.POST, url, json=JSON, status=200)
         response = t.upload(path, file_path)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response, JSON)
 
     @responses.activate
     def test_get_me(self):
@@ -194,9 +194,11 @@ class TestNetworking(TestCase):
             'id': USER_ID,
             'name': 'Sample project',
         }
+
         responses.add(responses.GET, url, json=json, status=200)
 
         responses.add(responses.GET, URL_API_ME, json=json, status=200)
+
         url = '{}/projects/{}/runs'.format(
             URL_USERS, PROJECT_ID)
         json = {
@@ -204,9 +206,8 @@ class TestNetworking(TestCase):
             'displayName': "My test run"
         }
 
-
         responses.add(responses.POST, url, json=json, status=201)
-        self.assertEqual(t.start_test_run(PROJECT_ID, DEVICE_GROUP_ID), json['id'])  
+        self.assertEqual(t.start_test_run(PROJECT_ID, DEVICE_GROUP_ID), json['id'])
 
     @responses.activate
     def test_delete_project_parameters(self):
@@ -216,9 +217,8 @@ class TestNetworking(TestCase):
         json = {
             'id': USER_ID
         }
+
         responses.add(responses.GET, URL_API_ME, json=json, status=200)
         responses.add(responses.DELETE, url, json=JSON, status=204)
         response = t.delete_project_parameters(PROJECT_ID, PARAM_ID)
         self.assertEqual(response.status_code, 204)
-
-      

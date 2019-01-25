@@ -240,7 +240,7 @@ class Testdroid:
             res = requests.post(url, files=files, headers=self._build_headers())
             if res.status_code not in list(range(200, 300)):
                 raise RequestResponseError(res.text, res.status_code)
-            return res
+            return res.json()
 
     """ GET from API resource
     """
@@ -396,22 +396,21 @@ class Testdroid:
     def upload_application_file(self, project_id, filename):
         me = self.get_me()
         path = "users/%s/projects/%s/files/application" % (me['id'], project_id)
-        self.upload(path=path, filename=filename)
+        return self.upload(path=path, filename=filename)
 
     """ Upload application file to project
     """
     def upload_file(self, filename):
         me = self.get_me()
         path = "users/%s/files" % (me['id'])
-        res = self.upload(path=path, filename=filename).json()
-        print("ID:%s Name:%s Size:%s" % (str(res['id']).ljust(10), res['name'].ljust(15), res['size']))
+        return self.upload(path=path, filename=filename)
 
     """ Upload test file to project
     """
     def upload_test_file(self, project_id, filename):
         me = self.get_me()
         path = "users/%s/projects/%s/files/test" % (me['id'], project_id)
-        self.upload(path=path, filename=filename)
+        return self.upload(path=path, filename=filename)
 
     """ Delete project parameter
     """
@@ -431,7 +430,7 @@ class Testdroid:
     def upload_data_file(self, project_id, filename):
         me = self.get_me()
         path = "users/%s/projects/%s/files/data" % (me['id'], project_id)
-        self.upload(path=path, filename=filename)
+        return self.upload(path=path, filename=filename)
 
     """ Set project parameters
     """
@@ -464,7 +463,7 @@ class Testdroid:
         path = "projects/%(project_id)s/frameworks" % {
             'project_id': project_id
         }
-        self.post(path, payload={"frameworkId": frameworkId})
+        return self.post(path, payload={"frameworkId": frameworkId})
 
 
     """ Start a test run using test run config
