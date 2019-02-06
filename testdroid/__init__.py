@@ -391,9 +391,11 @@ class Testdroid:
         for project in self.get_projects(limit)['data']:
             print("%s %s \"%s\"" % (str(project['id']).ljust(10), project['type'].ljust(15), project['name']))
 
-    """ Upload application file to project
+    """ ***DEPRECATED*** Upload application file to project
+Consider using upload_file() instead.
     """
     def upload_application_file(self, project_id, filename):
+        logger.warning('WARNING: This method has been deprecated and will be removed in the future.')
         me = self.get_me()
         path = "users/%s/projects/%s/files/application" % (me['id'], project_id)
         return self.upload(path=path, filename=filename)
@@ -405,9 +407,11 @@ class Testdroid:
         path = "users/%s/files" % (me['id'])
         return self.upload(path=path, filename=filename)
 
-    """ Upload test file to project
+    """ ***DEPRECATED*** Upload test file to project
+Consider using upload_file() instead.
     """
     def upload_test_file(self, project_id, filename):
+        logger.warning('WARNING: This method has been deprecated and will be removed in the future.')
         me = self.get_me()
         path = "users/%s/projects/%s/files/test" % (me['id'], project_id)
         return self.upload(path=path, filename=filename)
@@ -425,9 +429,11 @@ class Testdroid:
         path = "me/projects/%s/config/parameters" % ( project_id )
         return self.get(path=path)
 
-    """ Upload additional data file to project
+    """ ***DEPRECATED*** Upload additional data file to project
+Consider using upload_file() instead.
     """
     def upload_data_file(self, project_id, filename):
+        logger.warning('WARNING: This method has been deprecated and will be removed in the future.')
         me = self.get_me()
         path = "users/%s/projects/%s/files/data" % (me['id'], project_id)
         return self.upload(path=path, filename=filename)
@@ -446,9 +452,11 @@ class Testdroid:
         path = "me/projects/%s/config" % ( project_id )
         return self.get(path=path)
 
-    """ Set project config according to http://docs.testdroid.com/_pages/client.html#project-config
+    """ ***DEPRECATED*** Set project config according to http://docs.testdroid.com/_pages/client.html#project-config
+Consider using start_test_run_using_config() instead.
     """
     def set_project_config(self, project_id, payload):
+        logger.warning('WARNING: This method has been deprecated and will be removed in the future.')
         #set the project config to reflect the given json payload
         #e.g.: {'usedDeviceGroupId': 1234}
         if isinstance(payload, str):
@@ -457,9 +465,11 @@ class Testdroid:
         path = "users/%s/projects/%s/config" % ( me['id'], project_id )
         return self.post(path=path, payload=payload)
 
-    """Set project framework based on a framework integer id
+    """ ***DEPRECATED*** Set project framework based on a framework integer id
+Consider using start_test_run_using_config() instead.
     """
     def set_project_framework(self, project_id, frameworkId):
+        logger.warning('WARNING: This method has been deprecated and will be removed in the future.')
         path = "projects/%(project_id)s/frameworks" % {
             'project_id': project_id
         }
@@ -483,9 +493,11 @@ class Testdroid:
         test_run = self.post(path=path, payload=test_run_config, headers={'Content-type': 'application/json', 'Accept': 'application/json'})
         return test_run
 
-    """ Start a test run on a device group
+    """ ***DEPRECATED*** Start a test run on a device group
+Consider using start_test_run_using_config() instead.
     """
     def start_test_run(self, project_id, device_group_id=None, device_model_ids=None, name=None, additional_params={}):
+        logger.warning('WARNING: This method has been deprecated and will be removed in the future.')
         # check project validity
         project = self.get_project(project_id)
         if not 'id' in project:
@@ -964,16 +976,17 @@ Commands:
                                                         CALABASH_IOS
     delete-project <id>                         Delete a project
     projects                                    Get projects
-    upload-application <project-id> <filename>  Upload application to project
-    upload-test <project-id> <filename>         Upload test file to project
-    upload-data <project-id> <filename>         Upload additional data file to project
+    upload-application <project-id> <filename>  ***DEPRECATED*** Upload application to project
+    upload-test <project-id> <filename>         ***DEPRECATED*** Upload test file to project
+    upload-data <project-id> <filename>         ***DEPRECATED*** Upload additional data file to project
     upload-file <filename>                      Upload to "Files"
     set-project-config <project-id> <config-json>
-                                                Change the project config parameters as facilitated by the API:
+                                                ***DEPRECATED*** Change the project config parameters as facilitated by the API:
                                                 http://docs.testdroid.com/_pages/client.html#project-config
                                                 e.g.:
                                                 ./testdroid-api-client set-project-config 1234 '{"limitationType":"CLASS", "limitationValue":"com.foo.test.VerifyFoo"}'
-    start-test-run <project-id> <device-group-id> Start a test run
+    start-test-run <project-id> <device-group-id>
+                                                ***DEPRECATED*** Start a test run
     start-wait-download-test-run <project-id> <device-group-id>
                                                 Start a test run, await completion (polling) and
                                                 download results
