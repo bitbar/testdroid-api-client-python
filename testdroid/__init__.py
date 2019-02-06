@@ -396,7 +396,7 @@ class Testdroid:
     def upload_application_file(self, project_id, filename):
         me = self.get_me()
         path = "users/%s/projects/%s/files/application" % (me['id'], project_id)
-        self.upload(path=path, filename=filename)
+        return self.upload(path=path, filename=filename)
 
     """ Upload application file to project
     """
