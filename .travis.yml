@@ -16,3 +16,4 @@ deploy:
     secure: YIvWzNQAUsnxUNQGtGBKAdA9qJBCoaxVudbmO68OCQJ8x4iseNH321tUCihO3ZVeEkyduXEHIK85Club0CEgLvANoGnAOeLPWs+xCljagPBwjtjM7BAtIpojOCCd69OhZfF8pYuUNHL1Ja6NmwoNXSLwhDpTDJVQp0v+dOVAjJg=
   on:
     tags: true
+  skip_existing: true

@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 import sys, os
 
 
-version = '2.69.0'
+version = '2.69.1'
 
 setup(name='testdroid',
       version=version,
@@ -16,7 +16,7 @@ Testdroid API client for Python""",
       keywords='testdroid rest api client',
       author='Henri Kivelä <henri.kivela@bitbar.com>, Sakari Rautiainen <sakari.rautiainen@bitbar.com>, Teppo Malinen <teppo.malinen@bitbar.com>, Jarno Tuovinen <jarno.tuovinen@bitbar.com>, Atte Keltanen <atte.keltanen@bitbar.com>',
       author_email='info@bitbar.com',
-      url='http://www.testdroid.com',
+      url='http://www.bitbar.com',
       license='Apache License v2.0',
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       include_package_data=True,
