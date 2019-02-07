@@ -452,7 +452,7 @@ Consider using upload_file() instead.
         path = "me/projects/%s/config" % ( project_id )
         return self.get(path=path)
 
-    """ ***DEPRECATED*** Set project config according to http://docs.testdroid.com/_pages/client.html#project-config
+    """ ***DEPRECATED*** Set project config
 Consider using start_test_run_using_config() instead.
     """
     def set_project_config(self, project_id, payload):
@@ -958,7 +958,7 @@ Consider using start_test_run_using_config() instead.
             def format_epilog(self, formatter):
                 return self.epilog
         usage = "usage: %prog [options] <command> [arguments...]"
-        description = "Client for Testdroid Cloud API v2"
+        description = "Client for Bitbar Cloud API v2"
         epilog = """
 Commands:
 
@@ -982,7 +982,6 @@ Commands:
     upload-file <filename>                      Upload to "Files"
     set-project-config <project-id> <config-json>
                                                 ***DEPRECATED*** Change the project config parameters as facilitated by the API:
-                                                http://docs.testdroid.com/_pages/client.html#project-config
                                                 e.g.:
                                                 ./testdroid-api-client set-project-config 1234 '{"limitationType":"CLASS", "limitationValue":"com.foo.test.VerifyFoo"}'
     start-test-run <project-id> <device-group-id>
@@ -1008,7 +1007,7 @@ Commands:
                                                 See the sample of Jenkisfile in http://docs.bitbar.com/build-service/guide.html
     update-job <job-id> <job-name> <job-configuration>
                                                 Update existing job
-    create-build <job-id> <build-configuration> Create a new build job. See https://cloud.testdroid.com/cloud/swagger-ui.html
+    create-build <job-id> <build-configuration> Create a new build job. See https://cloud.bitbar.com/cloud/swagger-ui.html
                                                 for details of build configuration
     delete-job <job-id>                         Delete job and all the builds in it
     delete-build <job-id> <build-id>            Delete build by id
@@ -1044,7 +1043,7 @@ Commands:
 """
         parser = MyParser(usage=usage, description=description, epilog=epilog,  version="%s %s" % ("%prog", __version__))
         parser.add_option("-k", "--apikey", dest="apikey",
-                          help="API key - the API key for Testdroid Cloud. Optional. You can use environment variable TESTDROID_APIKEY as well.")
+                          help="API key - the API key for Bitbar Cloud. Optional. You can use environment variable TESTDROID_APIKEY as well.")
         parser.add_option("-u", "--username", dest="username",
                           help="Username - the email address. Optional. You can use environment variable TESTDROID_USERNAME as well.")
         parser.add_option("-p", "--password", dest="password",
