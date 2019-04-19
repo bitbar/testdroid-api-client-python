@@ -290,6 +290,14 @@ class Testdroid:
     def get_device_groups(self, limit=0):
         return self.get("me/device-groups", payload = {'limit': limit})
 
+    """ Returns list of devices from device group
+    """
+    def get_devices_from_group(self, device_group_id, limit=0):
+        me = self.get_me()
+        path = "users/%s/device-groups/%s/devices" % (me['id'], device_group_id)
+        return self.get(path, payload = {'limit': limit})
+
+
     """ Returns list of frameworks
     """
     def get_frameworks(self, limit=0):
