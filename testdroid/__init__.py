@@ -11,7 +11,7 @@ else:
 from optparse import OptionParser
 from datetime import datetime
 
-__version__ = '2.69.2'
+__version__ = '2.69.3'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
@@ -199,10 +199,14 @@ class Testdroid:
             res = requests.get(url, params=payload, headers=self._build_headers(), stream=True, timeout=(60.0))
 
             if res.status_code in range(200, 300):
-                logger.info("Downloading %s (%s bytes)" % (filename, res.headers["Content-Length"]))
-                pos = 0
-                total = res.headers['content-length']
+                try:
+                    total = res.headers['Content-length']
+                    logger.info("Downloading %s (%s bytes)" % (filename, total))
+                except KeyError as e:
+                    callback = None 
 
+                pos = 0
+                
                 # Check if the system is Windows or not.
                 if os.name == 'nt':
                     fd = os.open(filename, os.O_RDWR|os.O_CREAT|os.O_BINARY)
