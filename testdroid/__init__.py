@@ -398,7 +398,7 @@ class Testdroid:
     """
     def print_projects(self, limit=0):
         me = self.get_me()
-        print("Projects for %s %s <%s>:" % (me['firstName'], me['lastName'], me['mainUserEmail']))
+        print("Projects for %s %s <%s>:" % (me['firstName'], me['lastName'], me['email']))
 
         for project in self.get_projects(limit)['data']:
             print("%s %s \"%s\"" % (str(project['id']).ljust(10), project['type'].ljust(15), project['name']))
