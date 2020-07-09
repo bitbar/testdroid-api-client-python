@@ -21,7 +21,7 @@ LIMIT = 0
 URL_BASE = 'https://cloud.bitbar.com'
 URL_API = '{}/api/v2'.format(URL_BASE)
 URL_API_ME = '{}/me'.format(URL_API)
-URL_USERS = '{}/users/{}'.format(URL_API,USER_ID)
+URL_USERS = '{}/users/{}'.format(URL_API, USER_ID)
 
 t = testdroid.Testdroid()
 
@@ -107,7 +107,6 @@ class TestNetworking(TestCase):
 
     @responses.activate
     def test_get_project(self):
-        PROJECT_ID = 2
         url = '{}/projects/{}'.format(URL_API_ME, PROJECT_ID)
         responses.add(responses.GET, url, json=JSON, status=200)
         response = t.get_project(PROJECT_ID)
@@ -115,7 +114,6 @@ class TestNetworking(TestCase):
 
     @responses.activate
     def test_get_project_parameters(self):
-        PROJECT_ID = 2
         url = '{}/projects/{}/config/parameters'.format(URL_API_ME, PROJECT_ID)
         responses.add(responses.GET, url, json=JSON, status=200)
         response = t.get_project_parameters(PROJECT_ID)
@@ -123,7 +121,6 @@ class TestNetworking(TestCase):
 
     @responses.activate
     def test_get_project_config(self):
-        PROJECT_ID = 2
         url = '{}/projects/{}/config'.format(URL_API_ME, PROJECT_ID)
         responses.add(responses.GET, url, json=JSON, status=200)
         response = t.get_project_config(PROJECT_ID)

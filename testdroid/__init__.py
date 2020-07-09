@@ -11,7 +11,7 @@ else:
 from optparse import OptionParser
 from datetime import datetime
 
-__version__ = '2.69.3'
+__version__ = '2.100.0'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
@@ -19,21 +19,30 @@ logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('testdroid')
 logger.setLevel(logging.INFO)
 
+
 class RequestTimeout(Exception):
 
     def __init__(self, msg):
         super(Exception, self).__init__(msg)
+
 
 class ConnectionError(Exception):
 
     def __init__(self, msg):
         super(Exception, self).__init__(msg)
 
+
 class RequestResponseError(Exception):
 
     def __init__(self, msg, status_code):
-        super(Exception, self).__init__("Request Error: code %s: %s" %
-                                         (status_code, msg) )
+        super(Exception, self).__init__("Request Error: code %s: %s" % (status_code, msg) )
+        self.status_code = status_code
+
+
+class APIException(Exception):
+
+    def __init__(self, msg, status_code):
+        super(Exception, self).__init__("APIException: code %s: %s" % (status_code, msg) )
         self.status_code = status_code
 
 
@@ -88,7 +97,6 @@ class DownloadProgressBar:
         return str(self.prog_bar)
 
 
-
 class Testdroid:
     # Cloud URL (not including API path)
     url = None
@@ -104,6 +112,8 @@ class Testdroid:
     download_buffer_size = 65536
     # polling interval when awaiting for test run completion
     polling_interval_mins = 10
+    # Set of statuses allowing use of file
+    __accepted_virus_scan_statuses = {'safe', 'disabled', None}
 
     """ Constructor, defaults against cloud.bitbar.com
     """
@@ -233,11 +243,10 @@ class Testdroid:
             logger.info("Download has failed. Please try to restart your download")
             raise ConnectionError("Download has failed. Please try to restart your download")
 
-
     """ Upload file to API resource
     """
     def upload(self, path=None, filename=None):
-        # TOOD: where's the error handling?
+        # TODO: where's the error handling?
         with open(filename, 'rb') as f:
             url = "%s/api/v2/%s" % (self.cloud_url, path)
             files = {'file': f}
@@ -255,7 +264,7 @@ class Testdroid:
 
         url = "%s/api/v2/%s" % (self.cloud_url, path)
         headers = dict(list(self._build_headers().items()) + list(headers.items()))
-        res =  requests.get(url, params=payload, headers=headers)
+        res = requests.get(url, params=payload, headers=headers)
         if res.status_code not in list(range(200, 300)):
             raise RequestResponseError(res.text, res.status_code)
         logger.debug(res.text)
@@ -301,7 +310,6 @@ class Testdroid:
         path = "users/%s/device-groups/%s/devices" % (me['id'], device_group_id)
         return self.get(path, payload = {'limit': limit})
 
-
     """ Returns list of frameworks
     """
     def get_frameworks(self, limit=0):
@@ -311,7 +319,6 @@ class Testdroid:
     """
     def get_devices(self, limit=0):
         return self.get(path = "devices", payload = {'limit': limit})
-
 
     """ Print input files
     """
@@ -334,7 +341,7 @@ class Testdroid:
 
         for device in self.get_devices(limit)['data']:
             if device['creditsPrice'] == 0 and device['locked'] == False and device['osType'] == "ANDROID":
-                    print(device['displayName'])
+                print(device['displayName'])
         print("")
 
     """ Print available frameworks
@@ -346,7 +353,6 @@ class Testdroid:
         for framework in self.get_frameworks(limit)['data']:
             print("id: {}\tosType:{}\tname:{}".format(framework['id'], framework['osType'], framework['name']))
         print("")
-
 
     """ Print available free iOS devices
     """
@@ -366,7 +372,6 @@ class Testdroid:
     def print_available_free_devices(self, limit=0):
         self.print_available_free_android_devices(limit)
         self.print_available_free_ios_devices(limit)
-
 
     """ Create a project
     """
@@ -412,12 +417,43 @@ Consider using upload_file() instead.
         path = "users/%s/projects/%s/files/application" % (me['id'], project_id)
         return self.upload(path=path, filename=filename)
 
+    """ Get file
+    """
+    def get_file(self, file_id):
+        return self.get("me/files/%s" % file_id)
+
     """ Upload application file to project
     """
-    def upload_file(self, filename):
+    def upload_file(self, filename, timeout=300, skip_scan_wait=False):
         me = self.get_me()
         path = "users/%s/files" % (me['id'])
-        return self.upload(path=path, filename=filename)
+        file = self.upload(path=path, filename=filename)
+        if not skip_scan_wait:
+            self.wait_for_virus_scan([file], timeout)
+        return file
+
+    """ Wait for virus scan of all files in a collection
+    """
+    def wait_for_virus_scan(self, api_files, timeout=300):
+        loop_end = time.time() + timeout
+        while time.time() < loop_end:
+            statuses = set()
+            for file in api_files:
+                current_status = self.__get_virus_scan_status(file)
+                if current_status in self.__accepted_virus_scan_statuses:
+                    statuses.add(current_status)
+                else:  # get status after refreshing
+                    statuses.add(self.__get_virus_scan_status(self.get_file(file['id'])))
+            if 'infected' in statuses:
+                raise APIException(400, 'File rejected by virus scan')
+            if self.__accepted_virus_scan_statuses.issuperset(statuses):
+                return
+            time.sleep(1)
+        raise APIException(408, 'Waiting for virus scan timed out')
+
+    @staticmethod
+    def __get_virus_scan_status(api_file):
+        return next((p['value'] for p in api_file['fileProperties'] if p['key'] == 'virus_scan_status'), None)
 
     """ ***DEPRECATED*** Upload test file to project
 Consider using upload_file() instead.
@@ -453,7 +489,7 @@ Consider using upload_file() instead.
     """ Set project parameters
     """
     def set_project_parameters(self, project_id, parameters):
-        #set key value pair for project. e.g. : {'key' : 'my_key', 'value':'my_value'}
+        # set key value pair for project. e.g. : {'key' : 'my_key', 'value':'my_value'}
         me = self.get_me()
         path = "users/%s/projects/%s/config/parameters" % ( me['id'], project_id )
         return self.post(path=path, payload=parameters)
@@ -469,10 +505,10 @@ Consider using start_test_run_using_config() instead.
     """
     def set_project_config(self, project_id, payload):
         logger.warning('WARNING: This method has been deprecated and will be removed in the future.')
-        #set the project config to reflect the given json payload
-        #e.g.: {'usedDeviceGroupId': 1234}
+        # set the project config to reflect the given json payload
+        # e.g.: {'usedDeviceGroupId': 1234}
         if isinstance(payload, str):
-            payload=json.loads(payload)
+            payload = json.loads(payload)
         me = self.get_me()
         path = "users/%s/projects/%s/config" % ( me['id'], project_id )
         return self.post(path=path, payload=payload)
@@ -486,7 +522,6 @@ Consider using start_test_run_using_config() instead.
             'project_id': project_id
         }
         return self.post(path, payload={"frameworkId": frameworkId})
-
 
     """ Start a test run using test run config
         e.g '{"frameworkId":12252,
@@ -517,17 +552,19 @@ Consider using start_test_run_using_config() instead.
             sys.exit(1)
 
         # start populating parameters for the request payload...
-        payload={}
+        payload = {}
 
         if name is not None:
             payload['name'] = name
 
         if device_group_id is not None:
             payload['usedDeviceGroupId'] = device_group_id
-            print("Starting test run on project %s \"%s\" using device group %s" % (project['id'], project['name'], device_group_id))
+            print("Starting test run on project %s \"%s\" using device group %s" %
+                  (project['id'], project['name'], device_group_id))
         elif device_model_ids is not None:
             payload['usedDeviceIds[]'] = device_model_ids
-            print("Starting test run on project %s \"%s\" using device models ids %s" % (project['id'], project['name'], device_model_ids))
+            print("Starting test run on project %s \"%s\" using device models ids %s" %
+                  (project['id'], project['name'], device_model_ids))
         else:
             print("Either device group or device models must be defined")
             sys.exit(1)
@@ -543,14 +580,12 @@ Consider using start_test_run_using_config() instead.
         print("Name: %s" % test_run['displayName'])
         return test_run['id']
 
-
     """ Start a test run on a device group and wait for completion
     """
     def start_wait_test_run(self, project_id, device_group_id=None, device_model_ids=None):
         test_run_id = self.start_test_run(project_id, device_group_id, device_model_ids)
         self.wait_test_run(project_id, test_run_id)
         return test_run_id
-
 
     """ Start a test run on a device group, wait for completion and download results
     """
@@ -569,20 +604,21 @@ Consider using start_test_run_using_config() instead.
             while True:
                 time.sleep(self.polling_interval_mins * 60)
                 if not self.api_key:
-                    self.access_token = None    #WORKAROUND: access token thinks it's still valid,
+                    self.access_token = None    # WORKAROUND: access token thinks it's still valid,
                                                 # > token valid for another 633.357925177
-                                                #whilst this happens:
+                                                # whilst this happens:
                                                 # > Couldn't establish the state of the test run with id: 72593732. Aborting
                                                 # > {u'error_description': u'Invalid access token: b3e62604-9d2a-49dc-88f5-89786ff5a6b6', u'error': u'invalid_token'}
 
-                    self.get_token()            #in case it expired
+                    self.get_token()            # in case it expired
                 testRunStatus = self.get_test_run(project_id, test_run_id)
                 if testRunStatus and 'state' in testRunStatus:
                     if testRunStatus['state'] == "FINISHED":
                         print("The test run with id: %s has FINISHED" % test_run_id)
                         break
                     elif testRunStatus['state'] == "WAITING":
-                        print("[%s] The test run with id: %s is awaiting to be scheduled" % (time.strftime("%H:%M:%S"), test_run_id))
+                        print("[%s] The test run with id: %s is awaiting to be scheduled" %
+                              (time.strftime("%H:%M:%S"), test_run_id))
                         continue
                     elif testRunStatus['state'] == "RUNNING":
                         print("[%s] The test run with id: %s is running" % (time.strftime("%H:%M:%S"), test_run_id))
@@ -591,7 +627,6 @@ Consider using start_test_run_using_config() instead.
                 print("Couldn't establish the state of the test run with id: %s. Aborting" % test_run_id)
                 print(testRunStatus)
                 sys.exit(1)
-
 
     """ Start device sessions
     """
@@ -602,12 +637,12 @@ Consider using start_test_run_using_config() instead.
     """ Stop device session
     """
     def stop_device_session(self, device_session_id):
-        return self.post("me/device-sessions/%s/release" % (device_session_id))
+        return self.post("me/device-sessions/%s/release" % device_session_id)
 
     """ Get all test runs for a project
     """
     def get_project_test_runs(self, project_id, limit=0):
-        return self.get(path = "me/projects/%s/runs" % (project_id), payload = {'limit': limit})
+        return self.get(path = "me/projects/%s/runs" % project_id, payload = {'limit': limit})
 
     """ Print test runs of a project to console
     """
@@ -672,8 +707,6 @@ Consider using start_test_run_using_config() instead.
         print("id    buildNumber  state      status     duration")
         for build in self.get_builds(job_id, limit)['data']:
             print("%s %s %s %s %s" % (str(build['id']).ljust(12), str(build['buildNumber']).ljust(5), build['state'].ljust(10), build['status'].ljust(10), build['duration']))
-
-
 
     """ Get builds from the job
     """
@@ -843,7 +876,7 @@ Consider using start_test_run_using_config() instead.
         for device_run in device_runs['data']:
             logger.info("%s \"%s\" %s" % (device_run['id'], device_run['device']['displayName'], device_run['state']))
 
-        logger.info("");
+        logger.info("")
         for device_run in device_runs['data']:
             if device_run['state'] in ["SUCCEEDED", "FAILED", "ABORTED", "WARNING", "TIMEOUT"]:
                 directory = "%s-%s/%d-%s/screenshots" % (test_run['id'], test_run['displayName'], device_run['id'], device_run['device']['displayName'])
@@ -964,7 +997,6 @@ Consider using start_test_run_using_config() instead.
     def share_project(self, project_id, access_group_id):
         return self.post("me/projects/{}/share".format(project_id), payload={"accessGroupId": access_group_id})
 
-
     def get_parser(self):
         class MyParser(OptionParser):
             def format_epilog(self, formatter):
@@ -972,6 +1004,7 @@ Consider using start_test_run_using_config() instead.
         usage = "usage: %prog [options] <command> [arguments...]"
         description = "Client for Bitbar Cloud API v2"
         epilog = """
+
 Commands:
 
     me                                          Get user details
@@ -991,7 +1024,13 @@ Commands:
     upload-application <project-id> <filename>  ***DEPRECATED*** Upload application to project
     upload-test <project-id> <filename>         ***DEPRECATED*** Upload test file to project
     upload-data <project-id> <filename>         ***DEPRECATED*** Upload additional data file to project
-    upload-file <filename>                      Upload to "Files"
+    get-file <file-id>                          Get file details
+    upload-file <filename> <timeout> <skip-scan-wait>
+                                                Upload file
+                                                waits for virus scan unless skip-scan-wait is True (default: False)
+                                                up to given timeout (default: 300s)
+    wait-for-virus-scan <files> <timeout>       Wait for virus scan of list of files to finish 
+                                                up to given timeout (default: 300s)
     set-project-config <project-id> <config-json>
                                                 ***DEPRECATED*** Change the project config parameters as facilitated by the API:
                                                 e.g.:
@@ -1082,7 +1121,9 @@ Commands:
             "upload-application": self.upload_application_file,
             "upload-test": self.upload_test_file,
             "upload-data": self.upload_data_file,
+            "get-file": self.get_file,
             "upload-file": self.upload_file,
+            "wait-for-virus-scan": self.wait_for_virus_scan,
             "set-project-config": self.set_project_config,
             "start-test-run": self.start_test_run,
             "start-test-run-using-config": self.start_test_run_using_config,
@@ -1165,7 +1206,6 @@ Commands:
             sys.exit(1)
 
         print(command(*args[1:]) or "")
-        #print json.dumps(result, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
 def main():
@@ -1173,6 +1213,7 @@ def main():
     parser = testdroid.get_parser()
     commands = testdroid.get_commands()
     testdroid.cli(parser, commands)
+
 
 if __name__ == '__main__':
     main()
