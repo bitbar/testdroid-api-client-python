@@ -392,13 +392,14 @@ class Testdroid:
         self.print_available_free_android_devices(limit)
         self.print_available_free_ios_devices(limit)
 
-    def create_project(self, project_name, project_type):
+    def create_project(self, project_name, project_type=None):
         """ Create a project """
-
-        project = self.post(path="me/projects", payload={"name": project_name, "type": project_type})
+        if project_type:
+            print("Project type is deprecated and not used anymore")
+        project = self.post(path="me/projects", payload={"name": project_name})
         print(project)
 
-        logger.info("Project %s: %s (%s) created" % (project['id'], project['name'], project['type']))
+        logger.info("Project %s: %s created" % (project['id'], project['name']))
         return project
 
     def delete_project(self, project_id):
@@ -425,7 +426,7 @@ class Testdroid:
         print("Projects for %s %s <%s>:" % (me['firstName'], me['lastName'], me['email']))
 
         for project in self.get_projects(limit)['data']:
-            print("%s %s \"%s\"" % (str(project['id']).ljust(10), project['type'].ljust(15), project['name']))
+            print("%s \"%s\"" % (str(project['id']).ljust(10), project['name']))
 
     def get_file(self, file_id):
         """ Get file """
@@ -662,7 +663,7 @@ class Testdroid:
                 logger.info("")
 
     def __download_files(self, files, directory):
-        for file in files:
+        for file in files['data']:
             if file['state'] == "READY":
                 full_path = "%s/%s" % (directory, file['name'])
                 if not os.path.exists(directory):
@@ -829,15 +830,7 @@ Commands:
     me                                          Get user details
     available-free-devices                      Print list of currently available free devices
     device-groups                               Get list of your device groups
-    create-project <name> <type>                Create a project
-                                                Type is one of:
-                                                        ANDROID
-                                                        IOS
-                                                        UIAUTOMATOR
-                                                        APPIUM_ANDROID
-                                                        APPIUM_IOS
-                                                        CALABASH
-                                                        CALABASH_IOS
+    create-project <name>
     delete-project <id>                         Delete a project
     projects                                    Get projects
     get-file <file-id>                          Get file details
