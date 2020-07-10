@@ -210,9 +210,11 @@ class Testdroid:
         else:
             return {'Authorization': 'Bearer %s' % self.get_token(), 'Accept': 'application/json'}
 
-    def download(self, path=None, filename=None, payload={}, callback=None):
+    def download(self, path=None, filename=None, payload=None, callback=None):
         """ Download file from API resource """
 
+        if payload is None:
+            payload = {}
         url = "%s/api/v2/%s" % (self.cloud_url, path)
         try:
             res = requests.get(url, params=payload, headers=self.__build_headers(), stream=True, timeout=60.0)
@@ -264,15 +266,16 @@ class Testdroid:
                 raise RequestResponseError(res.text, res.status_code)
             return res.json()
 
-    def get(self, path=None, payload={}, headers={}):
+    def get(self, path, payload=None, headers=None):
         """ GET from API resource """
 
+        if payload is None:
+            payload = {}
         if path.find('v2/') >= 0:
             cut_path = path.split('v2/')
             path = cut_path[1]
 
-        url = "%s/api/v2/%s" % (self.cloud_url, path)
-        headers = dict(list(self.__build_headers().items()) + list(headers.items()))
+        (url, headers) = self.__get_request_params(path, headers)
         res = requests.get(url, params=payload, headers=headers)
         if res.status_code not in list(range(200, 300)):
             raise RequestResponseError(res.text, res.status_code)
@@ -282,25 +285,29 @@ class Testdroid:
         else:
             return res.text
 
-    def post(self, path=None, payload=None, headers={}):
+    def post(self, path=None, payload=None, headers=None):
         """ POST against API resources """
 
-        headers = dict(list(self.__build_headers().items()) + list(headers.items()))
-        url = "%s/api/v2/%s" % (self.cloud_url, path)
+        (url, headers) = self.__get_request_params(path, headers)
         res = requests.post(url, payload, headers=headers)
         if res.status_code not in list(range(200, 300)):
             raise RequestResponseError(res.text, res.status_code)
         return res.json()
 
-    def delete(self, path=None, headers={}):
+    def delete(self, path=None, headers=None):
         """ DELETE API resource """
 
-        headers = dict(list(self.__build_headers().items()) + list(headers.items()))
-        url = "%s/api/v2/%s" % (self.cloud_url, path)
+        (url, headers) = self.__get_request_params(path, headers)
         res = requests.delete(url, headers=headers)
         if res.status_code not in list(range(200, 300)):
             raise RequestResponseError(res.text, res.status_code)
         return res
+
+    def __get_request_params(self, path, headers):
+        if headers is None:
+            headers = {}
+        return ("%s/api/v2/%s" % (self.cloud_url, path),
+                dict(list(self.__build_headers().items()) + list(headers.items())))
 
     def get_me(self):
         """ Returns user details """
@@ -562,7 +569,7 @@ class Testdroid:
 
         return self.get("me/projects/%s/runs/%s" % (project_id, test_run_id))
 
-    def retry_test_run(self, project_id, test_run_id, device_run_ids=[]):
+    def retry_test_run(self, project_id, test_run_id, device_run_ids=None):
         """ Re-run an already-existing test run. Specify individual device run IDs to only re-run those devices. """
 
         endpoint = "me/projects/%s/runs/%s/retry" % (project_id, test_run_id)
