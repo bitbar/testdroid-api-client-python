@@ -569,12 +569,12 @@ class Testdroid:
 
         return self.get("me/projects/%s/runs/%s" % (project_id, test_run_id))
 
-    def retry_test_run(self, project_id, test_run_id, device_run_ids=None):
-        """ Re-run an already-existing test run. Specify individual device run IDs to only re-run those devices. """
+    def retry_test_run(self, project_id, test_run_id, device_session_ids=None):
+        """ Re-run an already-existing test run. Specify individual device session IDs to only re-run those devices. """
 
         endpoint = "me/projects/%s/runs/%s/retry" % (project_id, test_run_id)
-        if device_run_ids:
-            endpoint += "?deviceRunIds[]=" + "&deviceRunIds[]=".join(str(device_id) for device_id in device_run_ids)
+        if device_session_ids:
+            endpoint += "?deviceRunIds[]=" + "&deviceRunIds[]=".join(str(device_id) for device_id in device_session_ids)
         return self.post(endpoint)
 
     def abort_test_run(self, project_id, test_run_id):
@@ -582,19 +582,38 @@ class Testdroid:
 
         return self.post("me/projects/%s/runs/%s/abort" % (project_id, test_run_id))
 
-    def get_device_runs(self, project_id, test_run_id, limit=0):
-        """ Return device runs for a project """
+    def get_device_sessions(self, project_id, test_run_id, limit=0):
+        """ Return device sessions for a project """
 
-        return self.get(path="me/projects/%s/runs/%s/device-runs" % (project_id, test_run_id), payload={'limit': limit})
+        return self.get(path="me/projects/%s/runs/%s/device-sessions" %
+                             (project_id, test_run_id), payload={'limit': limit})
+
+    def get_device_runs(self, project_id, test_run_id, limit=0):
+        """ ***DEPRECATED***
+
+            Return device sessions for a project
+            use get_device_sessions() instead
+        """
+
+        return self.get_device_sessions(project_id, test_run_id, limit)
+
+    def get_device_session_screenshots_list(self, project_id, test_run_id, device_session_id, limit=0):
+        """ Downloads screenshots list for a device session """
+
+        return self.get("me/projects/%s/runs/%s/device-sessions/%s/screenshots" %
+                        (project_id, test_run_id, device_session_id), payload={'limit': limit})
 
     def get_device_run_screenshots_list(self, project_id, test_run_id, device_run_id, limit=0):
-        """ Downloads screenshots list for a device run """
+        """ ***DEPRECATED***
 
-        return self.get("me/projects/%s/runs/%s/device-runs/%s/screenshots" % (project_id, test_run_id, device_run_id),
-                        payload={'limit': limit})
+            Downloads screenshots list for a device run
+            use get_device_run_screenshots_list() instead
+        """
 
-    def get_device_run_files(self, project_id, test_run_id, device_session_id, tags=None):
-        """ Get list of files for device run """
+        return self.get_device_session_screenshots_list(project_id, test_run_id, device_run_id, limit)
+
+    def get_device_session_files(self, project_id, test_run_id, device_session_id, tags=None):
+        """ Get list of files for device session """
 
         if tags is None:
             return self.get("me/projects/%s/runs/%s/device-sessions/%s/output-file-set/files" %
@@ -602,6 +621,15 @@ class Testdroid:
         else:
             return self.get("me/projects/%s/runs/%s/device-sessions/%s/output-file-set/files?tag[]=%s" %
                             (project_id, test_run_id, device_session_id, tags))
+
+    def get_device_run_files(self, project_id, test_run_id, device_session_id, tags=None):
+        """ ***DEPRECATED***
+
+            Get list of files for device run
+            use get_device_session_files() instead
+        """
+
+        return self.get_device_session_files(project_id, test_run_id, device_session_id, tags)
 
     def get_input_files(self, limit=0):
         """ Get list of input files """
@@ -612,25 +640,25 @@ class Testdroid:
         """ Downloads test run files to a directory hierarchy """
 
         test_run = self.get_test_run(project_id, test_run_id)
-        device_runs = self.get_device_runs(project_id, test_run_id)
+        device_sessions = self.get_device_sessions(project_id, test_run_id)
 
         logger.info("")
-        logger.info("Test run %s: \"%s\" has %s device runs:" %
-                    (test_run['id'], test_run['displayName'], len(device_runs['data'])))
+        logger.info("Test run %s: \"%s\" has %s device sessions:" %
+                    (test_run['id'], test_run['displayName'], len(device_sessions['data'])))
 
-        for device_run in device_runs['data']:
-            state = device_run['state']
+        for device_session in device_sessions['data']:
+            state = device_session['state']
             logger.info("")
-            logger.info("%s \"%s\" %s" % (device_run['id'], device_run['device']['displayName'], state))
+            logger.info("%s \"%s\" %s" % (device_session['id'], device_session['device']['displayName'], state))
 
             if state in ("ABORTED", "TIMEOUT", "WARNING", "SUCCEEDED", "FAILED", "EXCLUDED"):
-                directory = "%s-%s/%d-%s" % (test_run_id, test_run['displayName'], device_run['id'],
-                                             device_run['device']['displayName'])
-                session_id = device_run['id']
-                files = self.get_device_run_files(project_id, test_run_id, session_id)
+                directory = "%s-%s/%d-%s" % (test_run_id, test_run['displayName'], device_session['id'],
+                                             device_session['device']['displayName'])
+                session_id = device_session['id']
+                files = self.get_device_session_files(project_id, test_run_id, session_id)
                 self.__download_files(files, directory)
             else:
-                logger.info("Device run is not ended - Skipping file downloads")
+                logger.info("Device session hasn't ended - Skipping file downloads")
                 logger.info("")
 
     def __download_files(self, files, directory):
@@ -654,18 +682,19 @@ class Testdroid:
         """ Downloads test run screenshots """
 
         test_run = self.get_test_run(project_id, test_run_id)
-        device_runs = self.get_device_runs(project_id, test_run_id)
-        logger.info("Test run %s: \"%s\" has %s device runs:" %
-                    (test_run['id'], test_run['displayName'], len(device_runs['data'])))
-        for device_run in device_runs['data']:
-            logger.info("%s \"%s\" %s" % (device_run['id'], device_run['device']['displayName'], device_run['state']))
+        device_sessions = self.get_device_sessions(project_id, test_run_id)
+        logger.info("Test run %s: \"%s\" has %s device sessions:" %
+                    (test_run['id'], test_run['displayName'], len(device_sessions['data'])))
+        for device_session in device_sessions['data']:
+            logger.info("%s \"%s\" %s" %
+                        (device_session['id'], device_session['device']['displayName'], device_session['state']))
 
         logger.info("")
-        for device_run in device_runs['data']:
-            if device_run['state'] in ["SUCCEEDED", "FAILED", "ABORTED", "WARNING", "TIMEOUT"]:
+        for device_session in device_sessions['data']:
+            if device_session['state'] in ["SUCCEEDED", "FAILED", "ABORTED", "WARNING", "TIMEOUT"]:
                 directory = "%s-%s/%d-%s/screenshots" % (test_run['id'], test_run['displayName'],
-                                                         device_run['id'], device_run['device']['displayName'])
-                screenshots = self.get_device_run_screenshots_list(project_id, test_run_id, device_run['id'])
+                                                         device_session['id'], device_session['device']['displayName'])
+                screenshots = self.get_device_session_screenshots_list(project_id, test_run_id, device_session['id'])
                 no_screenshots = True
 
                 for screenshot in screenshots['data']:
@@ -675,7 +704,7 @@ class Testdroid:
                         os.makedirs(directory)
 
                     if not os.path.exists(full_path):
-                        self.__download_screenshot(project_id, test_run['id'], device_run['id'], screenshot['id'],
+                        self.__download_screenshot(project_id, test_run['id'], device_session['id'], screenshot['id'],
                                                    full_path)
                     else:
                         ''' Earlier downloaded images are checked, and if needed re-downloaded.
@@ -686,18 +715,18 @@ class Testdroid:
                             else:
                                 raise
                         except:
-                            self.__download_screenshot(project_id, test_run['id'], device_run['id'], screenshot['id'],
-                                                       full_path)
+                            self.__download_screenshot(project_id, test_run['id'], device_session['id'],
+                                                       screenshot['id'], full_path)
 
                 if no_screenshots:
-                    logger.info("Device %s has no screenshots - skipping" % device_run['device']['displayName'])
+                    logger.info("Device %s has no screenshots - skipping" % device_session['device']['displayName'])
             else:
                 logger.info("Device %s has errored or has not finished - skipping" %
-                            device_run['device']['displayName'])
+                            device_session['device']['displayName'])
 
-    def __download_screenshot(self, project_id, test_run_id, device_run_id, screenshot_id, full_path):
-        url = "me/projects/%s/runs/%s/device-runs/%s/screenshots/%s" % \
-              (project_id, test_run_id, device_run_id, screenshot_id)
+    def __download_screenshot(self, project_id, test_run_id, device_session_id, screenshot_id, full_path):
+        url = "me/projects/%s/runs/%s/device-sessions/%s/screenshots/%s" % \
+              (project_id, test_run_id, device_session_id, screenshot_id)
         prog = DownloadProgressBar()
         self.download(url, full_path, callback=lambda pos, total: prog.update(int(pos), int(total)))
         print("")
@@ -740,7 +769,7 @@ class Testdroid:
     def get_access_group_resource(self, access_group_id, resource_id):
         """ Get resource from access group """
 
-        return self.get("ame/ccess-groups/{}/resources/{}".format(access_group_id, resource_id))
+        return self.get("me/access-groups/{}/resources/{}".format(access_group_id, resource_id))
 
     def delete_access_group_resource(self, access_group_id, resource_id):
         """ Delete resource from access group """
@@ -795,7 +824,6 @@ class Testdroid:
         usage = "usage: %prog [options] <command> [arguments...]"
         description = "Client for Bitbar Cloud API v2"
         epilog = """
-
 Commands:
 
     me                                          Get user details
@@ -824,15 +852,17 @@ Commands:
     wait-test-run <project-id> <test-run-id>    Await completion (polling) of the test run
     test-runs <project-id>                      Get test runs for a project
     test-run <project-id> <test-run-id>         Get test run details
-    device-runs <project-id> <test-run-id>      Get device runs for a test run
+    get_device_sessions <project-id> <test-run-id>      
+                                                Get device sessions for a test run
+    device-runs <project-id> <test-run-id>      ***DEPRECATED*** Get device runs for a test run
     download-test-run <project-id> <test-run-id>
                                                 Download test run data. Data will be downloaded to
                                                 current directory in a structure:
-                                                [test-run-id]/[device-run-id]-[device-name]/files...
+                                                [test-run-id]/[device-session-id]-[device-name]/files...
     download-test-screenshots <project-id> <test-run-id>
                                                 Download test run screenshots. Screenshots will be downloaded to
                                                 current directory in a structure:
-                                                [test-run-id]/[device-run-id]-[device-name]/screenshots/...
+                                                [test-run-id]/[device-session-id]-[device-name]/screenshots/...
 
     access-groups                               Get access groups
     access-group <access-group-id>              Get an access group by id
@@ -901,6 +931,8 @@ Commands:
             "wait-test-run": self.wait_test_run,
             "test-run": self.get_test_run,
             "test-runs": self.print_project_test_runs,
+            "device-sessions": self.get_device_sessions,
+            "device-session-files": self.get_device_session_files,
             "device-runs": self.get_device_runs,
             "device-run-files": self.get_device_run_files,
             "list-input-files": self.print_input_files,
