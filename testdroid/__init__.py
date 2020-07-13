@@ -397,7 +397,6 @@ class Testdroid:
         if project_type:
             print("Project type is deprecated and not used anymore")
         project = self.post(path="me/projects", payload={"name": project_name})
-        print(project)
 
         logger.info("Project %s: %s created" % (project['id'], project['name']))
         return project
