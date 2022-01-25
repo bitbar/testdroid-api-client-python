@@ -616,10 +616,10 @@ class Testdroid:
         """ Get list of files for device session """
 
         if tags is None:
-            return self.get("me/projects/%s/runs/%s/device-sessions/%s/output-file-set/files" %
+            return self.get("me/projects/%s/runs/%s/device-sessions/%s/output-file-set/files?limit=0" %
                             (project_id, test_run_id, device_session_id))
         else:
-            return self.get("me/projects/%s/runs/%s/device-sessions/%s/output-file-set/files?tag[]=%s" %
+            return self.get("me/projects/%s/runs/%s/device-sessions/%s/output-file-set/files?limit=0&tag[]=%s" %
                             (project_id, test_run_id, device_session_id, tags))
 
     def get_device_run_files(self, project_id, test_run_id, device_session_id, tags=None):
