@@ -276,7 +276,7 @@ class Testdroid:
             path = cut_path[1]
 
         (url, headers) = self.__get_request_params(path, headers)
-        res = requests.get(url, params=payload, headers=headers)
+        res = requests.get(url, params=payload, headers=headers, timeout=60.0)
         if res.status_code not in list(range(200, 300)):
             raise RequestResponseError(res.text, res.status_code)
         logger.debug(res.text)
