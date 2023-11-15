@@ -27,15 +27,6 @@ t = testdroid.Testdroid()
 
 # check that API calls go where they should go
 class TestNetworking(TestCase):
-    def setUp(self):
-        # set up the token so gets, posts etc work
-        url = '{}/oauth/token'.format(URL_BASE)
-        json = {
-            'access_token': 'token',
-            'refresh_token': 'refresh',
-            'expires_in': 65535
-        }
-        responses.add(responses.POST, url, json=json, status=200)
 
     @responses.activate
     def test_get(self):
@@ -150,7 +141,7 @@ class TestNetworking(TestCase):
 
     @responses.activate
     def test_get_device_session_files_with_tags(self):
-        url = '{}/projects/{}/runs/{}/device-sessions/{}/output-file-set/files?tag[]={}'.format(
+        url = '{}/projects/{}/runs/{}/device-sessions/{}/output-file-set/files?limit=0&tag[]={}'.format(
             URL_API_ME, PROJECT_ID, TEST_RUN_ID, DEVICE_SESSION_ID, TAGS)
         responses.add(responses.GET, url, json=JSON, status=200)
         response = t.get_device_session_files(PROJECT_ID, TEST_RUN_ID, DEVICE_SESSION_ID, TAGS)

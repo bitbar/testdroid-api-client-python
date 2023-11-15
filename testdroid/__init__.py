@@ -17,7 +17,7 @@ else:
 from optparse import OptionParser
 from datetime import datetime
 
-__version__ = '2.100.0'
+__version__ = '3.0'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
@@ -109,12 +109,6 @@ class Testdroid:
     url = None
     # Api Key for authentication
     api_key = None
-    # Oauth access token
-    access_token = None
-    # Oauth refresh token
-    refresh_token = None
-    # Unix timestamp (seconds) when token expires
-    token_expiration_time = None
     # Buffer size used for downloads
     download_buffer_size = 65536
     # polling interval when awaiting for test run completion
@@ -126,19 +120,11 @@ class Testdroid:
         """ Constructor, defaults against cloud.bitbar.com """
 
         self.api_key = kwargs.get('apikey')
-        self.username = kwargs.get('username')
-        self.password = kwargs.get('password')
         self.cloud_url = kwargs.get('url') or "https://cloud.bitbar.com"
         self.download_buffer_size = kwargs.get('download_buffer_size') or 65536
 
     def set_apikey(self, apikey):
         self.api_key = apikey
-
-    def set_username(self, username):
-        self.username = username
-
-    def set_password(self, password):
-        self.password = password
 
     def set_url(self, url):
         self.cloud_url = url
@@ -149,56 +135,6 @@ class Testdroid:
     def set_polling_interval_mins(self, polling_interval_mins):
         self.polling_interval_mins = polling_interval_mins
 
-    def get_token(self):
-        """ Get Oauth2 token """
-
-        if not self.access_token:
-            # TODO: refresh
-            url = "%s/oauth/token" % self.cloud_url
-            payload = {
-                "client_id": "testdroid-cloud-api",
-                "grant_type": "password",
-                "username": self.username,
-                "password": self.password
-            }
-            res = requests.post(
-                url,
-                data=payload,
-                headers={"Accept": "application/json"}
-                )
-            if res.status_code not in list(range(200, 300)):
-                raise RequestResponseError(res.text, res.status_code)
-
-            reply = res.json()
-
-            self.access_token = reply['access_token']
-            self.refresh_token = reply['refresh_token']
-            self.token_expiration_time = time.time() + reply['expires_in']
-        elif self.token_expiration_time < time.time():
-            url = "%s/oauth/token" % self.cloud_url
-            payload = {
-                "client_id": "testdroid-cloud-api",
-                "grant_type": "refresh_token",
-                "refresh_token": self.refresh_token
-            }
-            res = requests.post(
-                url,
-                data=payload,
-                headers={"Accept": "application/json"}
-                )
-            if res.status_code not in list(range(200, 300)):
-                print("FAILED: Unable to get a new access token using refresh token")
-                self.access_token = None
-                return self.get_token()
-
-            reply = res.json()
-
-            self.access_token = reply['access_token']
-            self.refresh_token = reply['refresh_token']
-            self.token_expiration_time = time.time() + reply['expires_in']
-
-        return self.access_token
-
     def __build_headers(self):
         """ Helper method for getting necessary headers to use for API calls, including authentication """
 
@@ -208,7 +144,7 @@ class Testdroid:
                       'Accept': 'application/json'}
             return apikey
         else:
-            return {'Authorization': 'Bearer %s' % self.get_token(), 'Accept': 'application/json'}
+            return {'Accept': 'application/json'}
 
     def download(self, path=None, filename=None, payload=None, callback=None):
         """ Download file from API resource """
@@ -280,7 +216,7 @@ class Testdroid:
         if res.status_code not in list(range(200, 300)):
             raise RequestResponseError(res.text, res.status_code)
         logger.debug(res.text)
-        if headers['Accept'] == 'application/json':
+        if headers.get('Accept') == 'application/json':
             return res.json()
         else:
             return res.text
@@ -514,15 +450,6 @@ class Testdroid:
 
             while True:
                 time.sleep(self.polling_interval_mins * 60)
-                # WORKAROUND: access token thinks it's still valid,
-                # > token valid for another 633.357925177
-                # whilst this happens:
-                # > Couldn't establish the state of the test run with id: 72593732. Aborting
-                # > {u'error_description': u'Invalid access token: b3e62604-9d2a-49dc-88f5-89786ff5a6b6',
-                # > u'error': u'invalid_token'}
-                if not self.api_key:
-                    self.access_token = None
-                    self.get_token()            # in case it expired
                 test_run_status = self.get_test_run(project_id, test_run_id)
                 if test_run_status and 'state' in test_run_status:
                     if test_run_status['state'] == "FINISHED":
@@ -887,12 +814,6 @@ Commands:
         parser.add_option("-k", "--apikey", dest="apikey",
                           help="API key - the API key for Bitbar Cloud. Optional. "
                                "You can use environment variable TESTDROID_APIKEY as well.")
-        parser.add_option("-u", "--username", dest="username",
-                          help="Username - the email address. Optional. "
-                               "You can use environment variable TESTDROID_USERNAME as well.")
-        parser.add_option("-p", "--password", dest="password",
-                          help="Password. Required if username is used. "
-                               "You can use environment variable TESTDROID_PASSWORD as well.")
         parser.add_option("-c", "--url", dest="url", default="https://cloud.bitbar.com",
                           help="Cloud endpoint. Default is https://cloud.bitbar.com. "
                                "You can use environment variable TESTDROID_URL as well.")
@@ -968,8 +889,6 @@ Commands:
         if options.quiet:
             logger.setLevel(logging.WARNING)
 
-        username = options.username or os.environ.get('TESTDROID_USERNAME')
-        password = options.password or os.environ.get('TESTDROID_PASSWORD')
         apikey = options.apikey or os.environ.get('TESTDROID_APIKEY')
         url = os.environ.get('TESTDROID_URL') or options.url
 
@@ -978,8 +897,6 @@ Commands:
         except:
             polling_interval_mins = 10
 
-        self.set_username(username)
-        self.set_password(password)
         self.set_apikey(apikey)
         self.set_url(url)
         self.set_polling_interval_mins(polling_interval_mins)
