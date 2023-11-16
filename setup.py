@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '2.100.0'
+version = '3.0'
 
 setup(name='testdroid',
       version=version,
