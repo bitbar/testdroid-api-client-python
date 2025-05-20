@@ -1,5 +1,8 @@
+3.1
+ * Custom User-Agent header
 3.0
  * Drop support for oauth grant type password
+
 2.69.3
  * Fixed chunked downloads 
 2.69.2

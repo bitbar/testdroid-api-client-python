@@ -12,12 +12,13 @@ if sys.version_info[0] > 2:
     import http.client
 else:
     import httplib
+
     assert httplib
 
 from optparse import OptionParser
 from datetime import datetime
 
-__version__ = '3.0'
+__version__ = '3.1'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
@@ -56,7 +57,7 @@ def ts_format(timestamp):
     """ Format unix timestamp to human readable. Automatically detects timestamps with seconds or milliseconds. """
 
     if len(str(timestamp)) > 11:
-        return datetime.fromtimestamp(timestamp/1000).strftime('%x %X %z')
+        return datetime.fromtimestamp(timestamp / 1000).strftime('%x %X %z')
     else:
         return datetime.fromtimestamp(timestamp).strftime('%x %X %z')
 
@@ -86,10 +87,10 @@ class DownloadProgressBar:
         self.prog_bar = '  [' + self.fill_char * num_hashes + ' ' * (all_full - num_hashes) + ']'
         pct_place = (len(self.prog_bar) // 2) - len(str(percent_done))
         pct_string = '%d%%' % percent_done
-        self.duration = int(round(time.time()-self.started))
-        self.eta = int(round(self.duration / (percent_done / 100.0)))-self.duration if percent_done > 5 else 'N/A'
+        self.duration = int(round(time.time() - self.started))
+        self.eta = int(round(self.duration / (percent_done / 100.0))) - self.duration if percent_done > 5 else 'N/A'
         self.prog_bar = self.prog_bar[0:pct_place] + \
-            (pct_string + self.prog_bar[pct_place + len(pct_string):])
+                        (pct_string + self.prog_bar[pct_place + len(pct_string):])
         self.prog_bar += '  %s/%s bytes, %ss' % (self.pos, self.total, self.duration)
         if pos < total:
             self.prog_bar += '  (E.T.A.: %ss)' % self.eta
@@ -139,9 +140,10 @@ class Testdroid:
         """ Helper method for getting necessary headers to use for API calls, including authentication """
 
         if self.api_key:
-            apikey = {'Authorization': 'Basic %s' % base64.b64encode((self.api_key+":")
+            apikey = {'Authorization': 'Basic %s' % base64.b64encode((self.api_key + ":")
                                                                      .encode(encoding='utf_8')).decode(),
-                      'Accept': 'application/json'}
+                      'Accept': 'application/json',
+                      'User-Agent': 'Bitbar Cloud API Client for Python v%s' % __version__}
             return apikey
         else:
             return {'Accept': 'application/json'}
@@ -748,6 +750,7 @@ class Testdroid:
         class MyParser(OptionParser):
             def format_epilog(self, formatter):
                 return self.epilog
+
         usage = "usage: %prog [options] <command> [arguments...]"
         description = "Client for Bitbar Cloud API v2"
         epilog = """
