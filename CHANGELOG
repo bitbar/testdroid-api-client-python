@@ -1,3 +1,5 @@
+3.2
+ * Remove usage of imghdr, fix screenshots download
 3.1
  * Custom User-Agent header
 3.0

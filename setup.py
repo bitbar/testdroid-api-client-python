@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-version = '3.1'
+version = '3.2'
 
 setup(name='testdroid',
       version=version,
@@ -23,6 +23,7 @@ setup(name='testdroid',
       zip_safe=True,
       install_requires=[
           'requests',
+          'filetype'
       ],
       entry_points={
           'console_scripts': [

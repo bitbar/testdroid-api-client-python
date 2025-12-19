@@ -6,7 +6,8 @@ import requests
 import logging
 import time
 import base64
-import imghdr
+import filetype
+
 
 if sys.version_info[0] > 2:
     import http.client
@@ -18,7 +19,7 @@ else:
 from optparse import OptionParser
 from datetime import datetime
 
-__version__ = '3.1'
+__version__ = '3.2'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
@@ -639,7 +640,8 @@ class Testdroid:
                         ''' Earlier downloaded images are checked, and if needed re-downloaded.
                         '''
                         try:
-                            if imghdr.what(full_path) in ['jpeg', 'png']:
+                            kind = filetype.guess(full_path)
+                            if kind and kind.mime in ['image/jpeg', 'image/png']:
                                 logger.info("Screenshot %s already exists - skipping download" % full_path)
                             else:
                                 raise
@@ -853,6 +855,7 @@ Commands:
             "device-run-files": self.get_device_run_files,
             "list-input-files": self.print_input_files,
             "download-test-run": self.download_test_run,
+            "download-test-screenshots": self.download_test_screenshots,
             "access-groups": self.get_access_groups,
             "access-group": self.get_access_group,
             "access-group-create": self.create_access_group,
